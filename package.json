@@ -46,6 +46,9 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@swc/cli": "^0.8.1",
+    "@swc/core": "^1.15.43",
+    "@swc/jest": "^0.2.39",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.2.0",
@@ -68,6 +71,11 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core"
+    ]
+  },
   "jest": {
     "moduleFileExtensions": [
       "js",
@@ -77,7 +85,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": "@swc/jest"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
