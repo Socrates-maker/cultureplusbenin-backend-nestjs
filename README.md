@@ -37,16 +37,24 @@ PORT=3000
 MONGODB_URI=mongodb://localhost:27017/cultureplusbenin
 JWT_SECRET=change-me-to-a-long-random-secret
 JWT_EXPIRES_IN=1d
+
+# Cloudinary (file uploads)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 ```
 
 ### Data model
 
-- **City** (ville): `name`, `description`, `location` (address + lat/lng), plus a virtual `media` list.
-- **TouristSite** (lieu touristique): same fields + a `city` reference, plus a virtual `media` list.
-- **Media**: `name`, `description`, `type` (`image` \| `video` \| `audio`), `url`, and a
-  polymorphic owner (`ownerType` = `City` \| `TouristSite`, `owner` = its id). A media belongs
-  to exactly one city or tourist site. `GET /cities/:id` and `GET /tourist-sites/:id` return
-  their media inline (populated).
+- **City** (ville): `name`, `description`, optional `history` (free text), `location`
+  (address + lat/lng), plus a virtual `media` list.
+- **TouristSite** (lieu touristique): same fields (incl. optional `history`) + a `city`
+  reference, plus a virtual `media` list.
+- **Media**: `name`, `description`, `type` (`image` \| `video` \| `audio`), `url`, an optional
+  `publicId` (set when the file was uploaded to Cloudinary), and a polymorphic owner
+  (`ownerType` = `City` \| `TouristSite`, `owner` = its id). A media belongs to exactly one
+  city or tourist site. `GET /cities/:id` and `GET /tourist-sites/:id` return their media
+  inline (populated).
 
 ### Roles & permissions (CASL)
 
@@ -80,8 +88,16 @@ db.users.updateOne({ email: 'you@example.com' }, { $set: { role: 'admin' } });
 - `cities` — `GET` (public), `POST` / `PATCH` / `DELETE` (editor/admin).
 - `tourist-sites` — `GET` (public, filter with `?city=<id>`), `POST` / `PATCH` / `DELETE` (editor/admin).
 - `media` — `GET` (public, filter with `?ownerType=City|TouristSite&owner=<id>&type=image|video|audio`),
-  `POST` / `PATCH` / `DELETE` (editor/admin). Create with `{ name, description, type, url, ownerType, owner }`.
+  `POST` / `PATCH` / `DELETE` (editor/admin). Create with `{ name, description, type, url, ownerType, owner }`
+  (optionally `publicId`). `DELETE` also removes the Cloudinary asset when the media has a `publicId`.
 - `users` — admin only (except `GET /users/me`).
+
+### File uploads (Cloudinary)
+
+- `POST /media/upload` — `multipart/form-data` with a single `file` field (editor/admin).
+  Uploads the file to Cloudinary and returns `{ url, publicId, type }`. Use the returned
+  `url` (and `publicId`) in a `POST /media` call to attach it to a city or tourist site.
+  Images, videos and audio are auto-detected.
 
 ---
 
