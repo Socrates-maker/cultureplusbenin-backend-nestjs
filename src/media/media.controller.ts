@@ -64,7 +64,10 @@ export class MediaController {
   @UseGuards(JwtAuthGuard, PoliciesGuard)
   @ApiBearerAuth()
   @CheckPolicies((ability) => ability.can(Action.Create, 'Media'))
-  @ApiOperation({ summary: 'Attach a media (by url) to a city or tourist site' })
+  @ApiOperation({
+    summary:
+      'Attach a media (by url) to a city, tourist site, gallery or historical figure',
+  })
   create(@Body() dto: CreateMediaDto, @CurrentUser() user: RequestUser) {
     return this.mediaService.create(dto, user);
   }

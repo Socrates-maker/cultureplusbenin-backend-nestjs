@@ -8,4 +8,6 @@ export enum MediaType {
 export enum MediaOwnerType {
   CITY = 'City',
   TOURIST_SITE = 'TouristSite',
+  GALLERY = 'Gallery',
+  HISTORICAL_FIGURE = 'HistoricalFigure',
 }
