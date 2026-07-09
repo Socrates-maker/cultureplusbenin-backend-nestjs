@@ -47,7 +47,8 @@ export class CreateMediaDto {
 
   @ApiProperty({
     example: '507f1f77bcf86cd799439011',
-    description: 'Id of the city or tourist site this media belongs to',
+    description:
+      'Id of the resource (city, tourist site, gallery or historical figure) this media belongs to',
   })
   @IsMongoId()
   owner: string;

@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CaslModule } from './casl/casl.module';
 import { CitiesModule } from './cities/cities.module';
+import { GalleriesModule } from './galleries/galleries.module';
+import { HistoricalFiguresModule } from './historical-figures/historical-figures.module';
 import { MediaModule } from './media/media.module';
 import { TouristSitesModule } from './tourist-sites/tourist-sites.module';
 import { UsersModule } from './users/users.module';
@@ -27,6 +29,8 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     CitiesModule,
     TouristSitesModule,
+    GalleriesModule,
+    HistoricalFiguresModule,
     MediaModule,
   ],
   controllers: [AppController],

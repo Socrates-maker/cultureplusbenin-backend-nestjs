@@ -12,6 +12,8 @@ import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { MediaOwnerType, MediaType } from '../common/enums/media.enum';
+import { GalleriesService } from '../galleries/galleries.service';
+import { HistoricalFiguresService } from '../historical-figures/historical-figures.service';
 import { TouristSitesService } from '../tourist-sites/tourist-sites.service';
 import { CreateMediaDto } from './dto/create-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
@@ -29,6 +31,8 @@ export class MediaService {
     @InjectModel(Media.name) private readonly mediaModel: Model<MediaDocument>,
     private readonly citiesService: CitiesService,
     private readonly touristSitesService: TouristSitesService,
+    private readonly galleriesService: GalleriesService,
+    private readonly historicalFiguresService: HistoricalFiguresService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -122,10 +126,19 @@ export class MediaService {
   }
 
   private async assertOwnerExists(ownerType: MediaOwnerType, owner: string) {
-    if (ownerType === MediaOwnerType.CITY) {
-      await this.citiesService.findById(owner);
-    } else {
-      await this.touristSitesService.findById(owner);
+    switch (ownerType) {
+      case MediaOwnerType.CITY:
+        await this.citiesService.findById(owner);
+        break;
+      case MediaOwnerType.TOURIST_SITE:
+        await this.touristSitesService.findById(owner);
+        break;
+      case MediaOwnerType.GALLERY:
+        await this.galleriesService.findById(owner);
+        break;
+      case MediaOwnerType.HISTORICAL_FIGURE:
+        await this.historicalFiguresService.findById(owner);
+        break;
     }
   }
 
