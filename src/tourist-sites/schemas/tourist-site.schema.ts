@@ -70,3 +70,11 @@ TouristSiteSchema.virtual('media', {
   foreignField: 'owner',
   match: { ownerType: 'TouristSite', deleted: false },
 });
+
+// Virtual relation to the galleries attached to this site.
+TouristSiteSchema.virtual('galleries', {
+  ref: 'Gallery',
+  localField: '_id',
+  foreignField: 'owner',
+  match: { ownerType: 'TouristSite', deleted: false },
+});
