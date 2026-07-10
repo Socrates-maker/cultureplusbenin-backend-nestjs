@@ -66,4 +66,10 @@ export class QuizController {
   getCategories() {
     return this.quizService.getCategories();
   }
+
+  @Post('seed-questions')
+  @ApiOperation({ summary: 'Seed quiz questions (for development only)' })
+  seedQuestions() {
+    return this.quizService.seedQuestions();
+  }
 }
