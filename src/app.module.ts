@@ -13,6 +13,7 @@ import { MemoryModule } from './memory/memory.module';
 import { QuizModule } from './quiz/quiz.module';
 import { TouristSitesModule } from './tourist-sites/tourist-sites.module';
 import { UsersModule } from './users/users.module';
+import { TestimonialsModule } from './testimonials/testimonials.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
     HistoricalFiguresModule,
     MediaModule,
     MemoryModule,
+    TestimonialsModule,
     QuizModule,
   ],
   controllers: [AppController],
