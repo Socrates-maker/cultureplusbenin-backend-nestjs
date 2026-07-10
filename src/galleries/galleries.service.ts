@@ -9,9 +9,16 @@ import { Model } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
+import { GalleryOwnerType } from '../common/enums/gallery.enum';
+import { TouristSitesService } from '../tourist-sites/tourist-sites.service';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 import { UpdateGalleryDto } from './dto/update-gallery.dto';
 import { Gallery, GalleryDocument } from './schemas/gallery.schema';
+
+interface GalleryFilter {
+  ownerType?: GalleryOwnerType;
+  owner?: string;
+}
 
 @Injectable()
 export class GalleriesService {
@@ -19,6 +26,7 @@ export class GalleriesService {
     @InjectModel(Gallery.name)
     private readonly galleryModel: Model<GalleryDocument>,
     private readonly citiesService: CitiesService,
+    private readonly touristSitesService: TouristSitesService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
   ) {}
 
@@ -26,18 +34,21 @@ export class GalleriesService {
     dto: CreateGalleryDto,
     user: RequestUser,
   ): Promise<GalleryDocument> {
-    // Ensure the referenced city exists before linking the gallery to it.
-    await this.citiesService.findById(dto.city);
+    // Ensure the referenced owner (city or tourist site) exists before linking.
+    await this.assertOwnerExists(dto.ownerType, dto.owner);
     const gallery = new this.galleryModel({ ...dto, createdBy: user.userId });
     return gallery.save();
   }
 
-  findAll(cityId?: string): Promise<GalleryDocument[]> {
-    const filter: Record<string, unknown> = { deleted: false };
-    if (cityId) {
-      filter.city = cityId;
+  findAll(filter: GalleryFilter = {}): Promise<GalleryDocument[]> {
+    const query: Record<string, unknown> = { deleted: false };
+    if (filter.ownerType) {
+      query.ownerType = filter.ownerType;
     }
-    return this.galleryModel.find(filter).populate('media').exec();
+    if (filter.owner) {
+      query.owner = filter.owner;
+    }
+    return this.galleryModel.find(query).populate('media').exec();
   }
 
   async findById(id: string): Promise<GalleryDocument> {
@@ -58,11 +69,24 @@ export class GalleriesService {
   ): Promise<GalleryDocument> {
     const gallery = await this.findById(id);
     this.assertCan(Action.Update, gallery, user);
-    if (dto.city) {
-      await this.citiesService.findById(dto.city);
-    }
     gallery.set(dto);
+    // Re-validate the owner whenever the relation is (re)assigned.
+    if (dto.owner || dto.ownerType) {
+      await this.assertOwnerExists(gallery.ownerType, gallery.owner.toString());
+    }
     return gallery.save();
+  }
+
+  /** Ensure the referenced owner document exists, based on its type. */
+  private async assertOwnerExists(
+    ownerType: GalleryOwnerType,
+    owner: string,
+  ): Promise<void> {
+    if (ownerType === GalleryOwnerType.CITY) {
+      await this.citiesService.findById(owner);
+    } else {
+      await this.touristSitesService.findById(owner);
+    }
   }
 
   async remove(id: string, user: RequestUser): Promise<void> {

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+import { GalleryOwnerType } from '../../common/enums/gallery.enum';
 
 export class CreateGalleryDto {
   @ApiProperty({ example: 'Galerie des masques Guèlèdè' })
@@ -13,9 +14,17 @@ export class CreateGalleryDto {
   description: string;
 
   @ApiProperty({
+    enum: GalleryOwnerType,
+    example: GalleryOwnerType.TOURIST_SITE,
+    description: 'Type of entity this gallery belongs to',
+  })
+  @IsEnum(GalleryOwnerType)
+  ownerType: GalleryOwnerType;
+
+  @ApiProperty({
     example: '507f1f77bcf86cd799439011',
-    description: 'Id of the city this gallery belongs to',
+    description: 'Id of the City or TouristSite this gallery belongs to',
   })
   @IsMongoId()
-  city: string;
+  owner: string;
 }

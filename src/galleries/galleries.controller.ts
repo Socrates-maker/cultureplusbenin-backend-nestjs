@@ -22,6 +22,7 @@ import { Action } from '../casl/action.enum';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { GalleryOwnerType } from '../common/enums/gallery.enum';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 import { UpdateGalleryDto } from './dto/update-gallery.dto';
 import { GalleriesService } from './galleries.service';
@@ -32,10 +33,18 @@ export class GalleriesController {
   constructor(private readonly galleriesService: GalleriesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List galleries, optionally filtered by city' })
-  @ApiQuery({ name: 'city', required: false, description: 'Filter by city id' })
-  findAll(@Query('city') city?: string) {
-    return this.galleriesService.findAll(city);
+  @ApiOperation({ summary: 'List galleries, optionally filtered by owner' })
+  @ApiQuery({ name: 'ownerType', required: false, enum: GalleryOwnerType })
+  @ApiQuery({
+    name: 'owner',
+    required: false,
+    description: 'Filter by owner id (City or TouristSite)',
+  })
+  findAll(
+    @Query('ownerType') ownerType?: GalleryOwnerType,
+    @Query('owner') owner?: string,
+  ) {
+    return this.galleriesService.findAll({ ownerType, owner });
   }
 
   @Get(':id')

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
+import { GalleryOwnerType } from '../../common/enums/gallery.enum';
 
 export type GalleryDocument = HydratedDocument<Gallery>;
 
@@ -15,14 +16,17 @@ export class Gallery {
   @Prop({ required: true })
   description: string;
 
-  // The city this gallery belongs to.
+  // Polymorphic owner: a gallery belongs to either a City or a TouristSite.
+  @Prop({ type: String, enum: GalleryOwnerType, required: true, index: true })
+  ownerType: GalleryOwnerType;
+
   @Prop({
     type: MongooseSchema.Types.ObjectId,
-    ref: 'City',
     required: true,
+    refPath: 'ownerType',
     index: true,
   })
-  city: Types.ObjectId;
+  owner: Types.ObjectId;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;

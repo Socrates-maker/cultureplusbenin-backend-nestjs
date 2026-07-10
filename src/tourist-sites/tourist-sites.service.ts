@@ -95,6 +95,7 @@ export class TouristSitesService {
     const site = await this.touristSiteModel
       .findOne({ _id: id, deleted: false })
       .populate('media')
+      .populate({ path: 'galleries', populate: { path: 'media' } })
       .exec();
     if (!site) {
       throw new NotFoundException('Tourist site not found');
