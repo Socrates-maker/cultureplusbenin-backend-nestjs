@@ -17,7 +17,8 @@ export type SubjectName =
   | 'TouristSite'
   | 'Gallery'
   | 'HistoricalFigure'
-  | 'Media';
+  | 'Media'
+  | 'Testimonial';
 
 export type Subjects = SubjectName | ForcedSubject<SubjectName> | 'all';
 
@@ -47,11 +48,13 @@ export class CaslAbilityFactory {
       can(Action.Read, 'Gallery');
       can(Action.Read, 'HistoricalFigure');
       can(Action.Read, 'Media');
+      can(Action.Read, 'Testimonial');
       can(Action.Create, 'City');
       can(Action.Create, 'TouristSite');
       can(Action.Create, 'Gallery');
       can(Action.Create, 'HistoricalFigure');
       can(Action.Create, 'Media');
+      can(Action.Create, 'Testimonial');
       can([Action.Update, Action.Delete], 'City', { createdBy: user.userId });
       can([Action.Update, Action.Delete], 'TouristSite', {
         createdBy: user.userId,
@@ -65,6 +68,9 @@ export class CaslAbilityFactory {
       can([Action.Update, Action.Delete], 'Media', {
         createdBy: user.userId,
       });
+      can([Action.Update, Action.Delete], 'Testimonial', {
+        createdBy: user.userId,
+      });
       // Editors may read / update only their own account.
       can([Action.Read, Action.Update], 'User', { _id: user.userId });
     } else {
@@ -74,11 +80,21 @@ export class CaslAbilityFactory {
       can(Action.Read, 'Gallery');
       can(Action.Read, 'HistoricalFigure');
       can(Action.Read, 'Media');
+      can(Action.Read, 'Testimonial');
       can([Action.Read, Action.Update], 'User', { _id: user.userId });
-      // They may contribute tourist sites, which stay pending until an admin
-      // validates them, and manage their own submissions.
+      // They may contribute tourist sites and testimonials, which stay pending
+      // until an admin validates them, and manage their own submissions.
       can(Action.Create, 'TouristSite');
       can([Action.Update, Action.Delete], 'TouristSite', {
+        createdBy: user.userId,
+      });
+      can(Action.Create, 'Testimonial');
+      can([Action.Update, Action.Delete], 'Testimonial', {
+        createdBy: user.userId,
+      });
+      // Contributors upload cover / testimonial media owned by their testimonial.
+      can(Action.Create, 'Media');
+      can([Action.Update, Action.Delete], 'Media', {
         createdBy: user.userId,
       });
     }
