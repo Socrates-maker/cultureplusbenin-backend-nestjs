@@ -9,6 +9,7 @@ import { CitiesModule } from './cities/cities.module';
 import { GalleriesModule } from './galleries/galleries.module';
 import { HistoricalFiguresModule } from './historical-figures/historical-figures.module';
 import { MediaModule } from './media/media.module';
+import { MemoryModule } from './memory/memory.module';
 import { QuizModule } from './quiz/quiz.module';
 import { TouristSitesModule } from './tourist-sites/tourist-sites.module';
 import { UsersModule } from './users/users.module';
@@ -33,6 +34,7 @@ import { UsersModule } from './users/users.module';
     GalleriesModule,
     HistoricalFiguresModule,
     MediaModule,
+    MemoryModule,
     QuizModule,
   ],
   controllers: [AppController],
