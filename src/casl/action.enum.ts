@@ -4,4 +4,5 @@ export enum Action {
   Read = 'read',
   Update = 'update',
   Delete = 'delete',
+  Approve = 'approve', // validate (approve / reject) user-submitted content
 }

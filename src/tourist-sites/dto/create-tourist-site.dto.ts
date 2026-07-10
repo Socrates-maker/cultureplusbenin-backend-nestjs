@@ -22,7 +22,7 @@ export class CreateTouristSiteDto {
 
   @ApiPropertyOptional({
     example:
-      "Érigée au XIXe siècle, la Porte du Non-Retour commémore les déportés de la traite négrière.",
+      'Érigée au XIXe siècle, la Porte du Non-Retour commémore les déportés de la traite négrière.',
     description: 'Historique du site touristique (texte libre).',
   })
   @IsOptional()
