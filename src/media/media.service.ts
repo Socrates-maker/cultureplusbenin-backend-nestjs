@@ -12,8 +12,10 @@ import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { MediaOwnerType, MediaType } from '../common/enums/media.enum';
+import { Role } from '../common/enums/role.enum';
 import { GalleriesService } from '../galleries/galleries.service';
 import { HistoricalFiguresService } from '../historical-figures/historical-figures.service';
+import { TestimonialsService } from '../testimonials/testimonials.service';
 import { TouristSitesService } from '../tourist-sites/tourist-sites.service';
 import { CreateMediaDto } from './dto/create-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
@@ -33,6 +35,7 @@ export class MediaService {
     private readonly touristSitesService: TouristSitesService,
     private readonly galleriesService: GalleriesService,
     private readonly historicalFiguresService: HistoricalFiguresService,
+    private readonly testimonialsService: TestimonialsService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -40,8 +43,35 @@ export class MediaService {
   async create(dto: CreateMediaDto, user: RequestUser): Promise<MediaDocument> {
     // Make sure the resource this media points to actually exists.
     await this.assertOwnerExists(dto.ownerType, dto.owner);
+    // Regular users may only attach media to a testimonial they own, so they
+    // can't inject unmoderated media into arbitrary resources.
+    await this.assertContributorMayAttach(dto, user);
     const media = new this.mediaModel({ ...dto, createdBy: user.userId });
     return media.save();
+  }
+
+  /**
+   * Non-trusted users (regular users) can create media only as the cover /
+   * content of a testimonial they authored. Editors and admins are unrestricted.
+   */
+  private async assertContributorMayAttach(
+    dto: CreateMediaDto,
+    user: RequestUser,
+  ): Promise<void> {
+    if (user.role === Role.ADMIN || user.role === Role.EDITOR) {
+      return;
+    }
+    if (dto.ownerType !== MediaOwnerType.TESTIMONIAL) {
+      throw new ForbiddenException(
+        'You may only attach media to your own testimonial',
+      );
+    }
+    const testimonial = await this.testimonialsService.findById(dto.owner);
+    if (testimonial.createdBy?.toString() !== user.userId) {
+      throw new ForbiddenException(
+        'You may only attach media to your own testimonial',
+      );
+    }
   }
 
   /**
@@ -138,6 +168,9 @@ export class MediaService {
         break;
       case MediaOwnerType.HISTORICAL_FIGURE:
         await this.historicalFiguresService.findById(owner);
+        break;
+      case MediaOwnerType.TESTIMONIAL:
+        await this.testimonialsService.findById(owner);
         break;
     }
   }

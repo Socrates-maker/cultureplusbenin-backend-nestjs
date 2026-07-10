@@ -10,4 +10,5 @@ export enum MediaOwnerType {
   TOURIST_SITE = 'TouristSite',
   GALLERY = 'Gallery',
   HISTORICAL_FIGURE = 'HistoricalFigure',
+  TESTIMONIAL = 'Testimonial',
 }
