@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
+import { ModerationStatus } from '../../common/enums/moderation-status.enum';
 import { Location, LocationSchema } from '../../common/schemas/location.schema';
 
 export type TouristSiteDocument = HydratedDocument<TouristSite>;
@@ -34,6 +35,27 @@ export class TouristSite {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
+
+  // Moderation state. User submissions start PENDING and are only publicly
+  // visible once an admin approves them; editor/admin submissions are APPROVED.
+  @Prop({
+    type: String,
+    enum: ModerationStatus,
+    default: ModerationStatus.PENDING,
+    index: true,
+  })
+  status: ModerationStatus;
+
+  // Admin who last reviewed this submission (approve / reject).
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
+  reviewedBy?: Types.ObjectId;
+
+  @Prop()
+  reviewedAt?: Date;
+
+  // Reason given when a submission is rejected (optional).
+  @Prop()
+  rejectionReason?: string;
 
   @Prop({ default: false })
   deleted: boolean;

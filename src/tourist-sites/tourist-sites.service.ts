@@ -5,10 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
+import { ModerationStatus } from '../common/enums/moderation-status.enum';
+import { Role } from '../common/enums/role.enum';
 import { CreateTouristSiteDto } from './dto/create-tourist-site.dto';
 import { UpdateTouristSiteDto } from './dto/update-tourist-site.dto';
 import {
@@ -31,24 +33,79 @@ export class TouristSitesService {
   ): Promise<TouristSiteDocument> {
     // Ensure the referenced city exists before linking the site to it.
     await this.citiesService.findById(dto.city);
-    const site = new this.touristSiteModel({ ...dto, createdBy: user.userId });
+    // Trusted contributors (editor / admin) self-publish; regular users'
+    // submissions stay pending until an admin validates them.
+    const trusted = this.isTrusted(user);
+    const site = new this.touristSiteModel({
+      ...dto,
+      createdBy: user.userId,
+      status: trusted ? ModerationStatus.APPROVED : ModerationStatus.PENDING,
+      reviewedBy: trusted ? user.userId : undefined,
+      reviewedAt: trusted ? new Date() : undefined,
+    });
     return site.save();
   }
 
+  /**
+   * Public listing, optionally filtered by city. Hides sites awaiting
+   * validation or rejected. `$nin` also matches legacy documents that predate
+   * the `status` field (missing status counts as visible), so no data
+   * migration is required.
+   */
   findAll(cityId?: string): Promise<TouristSiteDocument[]> {
-    const filter: Record<string, unknown> = { deleted: false };
+    const filter: Record<string, unknown> = {
+      deleted: false,
+      status: { $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED] },
+    };
     if (cityId) {
       filter.city = cityId;
     }
     return this.touristSiteModel.find(filter).populate('media').exec();
   }
 
+  /** True when a site must be hidden from the public (awaiting / denied). */
+  private isHidden(status?: ModerationStatus): boolean {
+    return (
+      status === ModerationStatus.PENDING ||
+      status === ModerationStatus.REJECTED
+    );
+  }
+
+  /** Moderation queue: sites awaiting admin validation (admin only). */
+  findPending(): Promise<TouristSiteDocument[]> {
+    return this.touristSiteModel
+      .find({ deleted: false, status: ModerationStatus.PENDING })
+      .exec();
+  }
+
+  /** The caller's own submissions, whatever their moderation status. */
+  findMine(user: RequestUser): Promise<TouristSiteDocument[]> {
+    return this.touristSiteModel
+      .find({ deleted: false, createdBy: user.userId })
+      .populate('media')
+      .exec();
+  }
+
+  /**
+   * Internal lookup, unrestricted by moderation status — used for ownership
+   * checks, updates and media attachment. Do not expose pending / rejected
+   * sites to the public through this.
+   */
   async findById(id: string): Promise<TouristSiteDocument> {
     const site = await this.touristSiteModel
       .findOne({ _id: id, deleted: false })
       .populate('media')
       .exec();
     if (!site) {
+      throw new NotFoundException('Tourist site not found');
+    }
+    return site;
+  }
+
+  /** Public single-site lookup: hides sites awaiting validation or rejected. */
+  async findPublicById(id: string): Promise<TouristSiteDocument> {
+    const site = await this.findById(id);
+    if (this.isHidden(site.status)) {
       throw new NotFoundException('Tourist site not found');
     }
     return site;
@@ -65,6 +122,14 @@ export class TouristSitesService {
       await this.citiesService.findById(dto.city);
     }
     site.set(dto);
+    // A non-trusted author editing an already-approved site sends it back to
+    // moderation, so approved content can't be silently swapped out.
+    if (!this.isTrusted(user) && site.status === ModerationStatus.APPROVED) {
+      site.status = ModerationStatus.PENDING;
+      site.reviewedBy = undefined;
+      site.reviewedAt = undefined;
+      site.rejectionReason = undefined;
+    }
     return site.save();
   }
 
@@ -73,6 +138,36 @@ export class TouristSitesService {
     this.assertCan(Action.Delete, site, user);
     site.deleted = true;
     await site.save();
+  }
+
+  /** Admin validation: publish a pending / rejected submission. */
+  async approve(id: string, user: RequestUser): Promise<TouristSiteDocument> {
+    const site = await this.findById(id);
+    this.assertCan(Action.Approve, site, user);
+    site.status = ModerationStatus.APPROVED;
+    site.reviewedBy = new Types.ObjectId(user.userId);
+    site.reviewedAt = new Date();
+    site.rejectionReason = undefined;
+    return site.save();
+  }
+
+  /** Admin validation: reject a submission with an optional reason. */
+  async reject(
+    id: string,
+    user: RequestUser,
+    reason?: string,
+  ): Promise<TouristSiteDocument> {
+    const site = await this.findById(id);
+    this.assertCan(Action.Approve, site, user);
+    site.status = ModerationStatus.REJECTED;
+    site.reviewedBy = new Types.ObjectId(user.userId);
+    site.reviewedAt = new Date();
+    site.rejectionReason = reason;
+    return site.save();
+  }
+
+  private isTrusted(user: RequestUser): boolean {
+    return user.role === Role.ADMIN || user.role === Role.EDITOR;
   }
 
   /** Record-level authorization: editors may only touch their own sites. */

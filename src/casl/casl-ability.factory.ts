@@ -52,11 +52,17 @@ export class CaslAbilityFactory {
       // Editors may read / update only their own account.
       can([Action.Read, Action.Update], 'User', { _id: user.userId });
     } else {
-      // Regular users can only read published content and their own account.
+      // Regular users can read published content and their own account.
       can(Action.Read, 'City');
       can(Action.Read, 'TouristSite');
       can(Action.Read, 'Media');
       can([Action.Read, Action.Update], 'User', { _id: user.userId });
+      // They may contribute tourist sites, which stay pending until an admin
+      // validates them, and manage their own submissions.
+      can(Action.Create, 'TouristSite');
+      can([Action.Update, Action.Delete], 'TouristSite', {
+        createdBy: user.userId,
+      });
     }
 
     return build() as AppAbility;
