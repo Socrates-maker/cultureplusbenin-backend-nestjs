@@ -154,7 +154,7 @@ export class MemoryService {
       ...dto,
       categoryId: dto.categoryId ? new Types.ObjectId(dto.categoryId) : undefined,
       difficulty: dto.difficulty ?? MemoryDifficulty.FACILE,
-      isPublished: true,
+      isPublished: dto.isPublished ?? true,
     }).save();
   }
 
@@ -170,6 +170,7 @@ export class MemoryService {
     if (dto.categoryId !== undefined) {
       item.categoryId = dto.categoryId ? new Types.ObjectId(dto.categoryId) : undefined;
     }
+    if (dto.isPublished !== undefined) item.isPublished = dto.isPublished;
 
     return item.save();
   }
