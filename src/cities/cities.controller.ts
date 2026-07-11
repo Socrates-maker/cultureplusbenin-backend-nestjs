@@ -7,9 +7,15 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
@@ -26,9 +32,14 @@ export class CitiesController {
   constructor(private readonly citiesService: CitiesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all cities (public)' })
-  findAll() {
-    return this.citiesService.findAll();
+  @ApiOperation({ summary: 'List all cities (public), optionally searched' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Free text search on name, description and history',
+  })
+  findAll(@Query('search') search?: string) {
+    return this.citiesService.findAll(search);
   }
 
   @Get(':id')

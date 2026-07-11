@@ -9,6 +9,7 @@ import { Model } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
+import { buildSearchFilter } from '../common/utils/search.util';
 import { CreateHistoricalFigureDto } from './dto/create-historical-figure.dto';
 import { UpdateHistoricalFigureDto } from './dto/update-historical-figure.dto';
 import {
@@ -38,10 +39,21 @@ export class HistoricalFiguresService {
     return figure.save();
   }
 
-  findAll(cityId?: string): Promise<HistoricalFigureDocument[]> {
+  findAll(
+    cityId?: string,
+    search?: string,
+  ): Promise<HistoricalFigureDocument[]> {
     const filter: Record<string, unknown> = { deleted: false };
     if (cityId) {
       filter.city = cityId;
+    }
+    const searchFilter = buildSearchFilter(search, [
+      'name',
+      'description',
+      'biography',
+    ]);
+    if (searchFilter) {
+      Object.assign(filter, searchFilter);
     }
     return this.historicalFigureModel.find(filter).populate('media').exec();
   }

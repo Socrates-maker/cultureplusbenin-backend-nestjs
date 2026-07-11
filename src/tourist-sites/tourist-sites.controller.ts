@@ -34,11 +34,17 @@ export class TouristSitesController {
 
   @Get()
   @ApiOperation({
-    summary: 'List approved tourist sites, optionally filtered by city',
+    summary:
+      'List approved tourist sites, optionally filtered by city and searched',
   })
   @ApiQuery({ name: 'city', required: false, description: 'Filter by city id' })
-  findAll(@Query('city') city?: string) {
-    return this.touristSitesService.findAll(city);
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Free text search on name, description and history',
+  })
+  findAll(@Query('city') city?: string, @Query('search') search?: string) {
+    return this.touristSitesService.findAll(city, search);
   }
 
   @Get('mine')

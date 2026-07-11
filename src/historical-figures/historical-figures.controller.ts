@@ -35,11 +35,17 @@ export class HistoricalFiguresController {
 
   @Get()
   @ApiOperation({
-    summary: 'List historical figures, optionally filtered by city',
+    summary:
+      'List historical figures, optionally filtered by city and searched',
   })
   @ApiQuery({ name: 'city', required: false, description: 'Filter by city id' })
-  findAll(@Query('city') city?: string) {
-    return this.historicalFiguresService.findAll(city);
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Free text search on name, description and biography',
+  })
+  findAll(@Query('city') city?: string, @Query('search') search?: string) {
+    return this.historicalFiguresService.findAll(city, search);
   }
 
   @Get(':id')
