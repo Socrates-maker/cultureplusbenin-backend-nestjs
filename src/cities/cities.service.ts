@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
+import { buildSearchFilter } from '../common/utils/search.util';
 import { City, CityDocument } from './schemas/city.schema';
 import { CreateCityDto } from './dto/create-city.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
@@ -24,8 +25,18 @@ export class CitiesService {
     return city.save();
   }
 
-  findAll(): Promise<CityDocument[]> {
-    return this.cityModel.find({ deleted: false }).populate('media').exec();
+  /** Public listing, optionally filtered by a free text search. */
+  findAll(search?: string): Promise<CityDocument[]> {
+    const filter: Record<string, unknown> = { deleted: false };
+    const searchFilter = buildSearchFilter(search, [
+      'name',
+      'description',
+      'history',
+    ]);
+    if (searchFilter) {
+      Object.assign(filter, searchFilter);
+    }
+    return this.cityModel.find(filter).populate('media').exec();
   }
 
   async findById(id: string): Promise<CityDocument> {

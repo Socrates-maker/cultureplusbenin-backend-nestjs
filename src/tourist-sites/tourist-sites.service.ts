@@ -9,6 +9,7 @@ import { Model, Types } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
+import { buildSearchFilter } from '../common/utils/search.util';
 import { ModerationStatus } from '../common/enums/moderation-status.enum';
 import { Role } from '../common/enums/role.enum';
 import { CreateTouristSiteDto } from './dto/create-tourist-site.dto';
@@ -52,13 +53,21 @@ export class TouristSitesService {
    * the `status` field (missing status counts as visible), so no data
    * migration is required.
    */
-  findAll(cityId?: string): Promise<TouristSiteDocument[]> {
+  findAll(cityId?: string, search?: string): Promise<TouristSiteDocument[]> {
     const filter: Record<string, unknown> = {
       deleted: false,
       status: { $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED] },
     };
     if (cityId) {
       filter.city = cityId;
+    }
+    const searchFilter = buildSearchFilter(search, [
+      'name',
+      'description',
+      'history',
+    ]);
+    if (searchFilter) {
+      Object.assign(filter, searchFilter);
     }
     return this.touristSiteModel.find(filter).populate('media').exec();
   }
