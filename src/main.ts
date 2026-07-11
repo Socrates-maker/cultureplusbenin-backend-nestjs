@@ -11,6 +11,7 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN?.split(',') ?? [
       'http://localhost:5173',
       'http://localhost:4173',
+      'https://cultureplusbenin-dashboard.vercel.app',
     ],
     credentials: true,
   });
