@@ -28,6 +28,7 @@ import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { MediaOwnerType, MediaType } from '../common/enums/media.enum';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CreateMediaDto } from './dto/create-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { MediaService } from './media.service';
@@ -47,11 +48,12 @@ export class MediaController {
   })
   @ApiQuery({ name: 'type', required: false, enum: MediaType })
   findAll(
+    @Query() pagination: PaginationQueryDto,
     @Query('ownerType') ownerType?: MediaOwnerType,
     @Query('owner') owner?: string,
     @Query('type') type?: MediaType,
   ) {
-    return this.mediaService.findAll({ ownerType, owner, type });
+    return this.mediaService.findAll({ ownerType, owner, type }, pagination);
   }
 
   @Get(':id')

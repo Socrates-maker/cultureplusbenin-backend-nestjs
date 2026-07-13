@@ -119,7 +119,7 @@ describe('Testimonials (e2e)', () => {
 
   it('hides the pending testimonial from the public list', async () => {
     const res = await request(server()).get('/testimonials').expect(200);
-    expect(res.body.map((t: { _id: string }) => t._id)).not.toContain(
+    expect(res.body.data.map((t: { _id: string }) => t._id)).not.toContain(
       testimonialId,
     );
   });
@@ -197,7 +197,7 @@ describe('Testimonials (e2e)', () => {
     const res = await request(server())
       .get(`/testimonials?subjectType=TouristSite&subject=${siteId}`)
       .expect(200);
-    const found = res.body.find(
+    const found = res.body.data.find(
       (t: { _id: string }) => t._id === testimonialId,
     );
     expect(found).toBeDefined();

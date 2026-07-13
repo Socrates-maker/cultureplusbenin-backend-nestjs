@@ -22,6 +22,7 @@ import { Action } from '../casl/action.enum';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CreateHistoricalFigureDto } from './dto/create-historical-figure.dto';
 import { UpdateHistoricalFigureDto } from './dto/update-historical-figure.dto';
 import { HistoricalFiguresService } from './historical-figures.service';
@@ -44,8 +45,12 @@ export class HistoricalFiguresController {
     required: false,
     description: 'Free text search on name, description and biography',
   })
-  findAll(@Query('city') city?: string, @Query('search') search?: string) {
-    return this.historicalFiguresService.findAll(city, search);
+  findAll(
+    @Query() pagination: PaginationQueryDto,
+    @Query('city') city?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.historicalFiguresService.findAll(city, search, pagination);
   }
 
   @Get(':id')

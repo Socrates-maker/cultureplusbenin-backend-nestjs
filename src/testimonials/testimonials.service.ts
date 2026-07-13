@@ -10,6 +10,11 @@ import { Model, Types } from 'mongoose';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { CitiesService } from '../cities/cities.service';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+} from '../common/utils/pagination.util';
 import { MediaType } from '../common/enums/media.enum';
 import { ModerationStatus } from '../common/enums/moderation-status.enum';
 import { Role } from '../common/enums/role.enum';
@@ -61,37 +66,49 @@ export class TestimonialsService {
    * validation or rejected. `$nin` also matches legacy documents that predate
    * the `status` field, so no data migration is required.
    */
-  findAll(filter: {
-    subjectType?: TestimonialSubjectType;
-    subject?: string;
-  } = {}): Promise<TestimonialDocument[]> {
+  findAll(
+    filter: {
+      subjectType?: TestimonialSubjectType;
+      subject?: string;
+    } = {},
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TestimonialDocument>> {
     const query: Record<string, unknown> = {
       deleted: false,
       status: { $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED] },
     };
     if (filter.subjectType) query.subjectType = filter.subjectType;
     if (filter.subject) query.subject = filter.subject;
-    return this.testimonialModel
-      .find(query)
-      .populate('coverMedia')
-      .populate('media')
-      .exec();
+    return paginate<TestimonialDocument>(
+      this.testimonialModel,
+      query,
+      pagination,
+      { populate: ['coverMedia', 'media'] },
+    );
   }
 
   /** Moderation queue: testimonials awaiting admin validation (admin only). */
-  findPending(): Promise<TestimonialDocument[]> {
-    return this.testimonialModel
-      .find({ deleted: false, status: ModerationStatus.PENDING })
-      .exec();
+  findPending(
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TestimonialDocument>> {
+    return paginate<TestimonialDocument>(
+      this.testimonialModel,
+      { deleted: false, status: ModerationStatus.PENDING },
+      pagination,
+    );
   }
 
   /** The caller's own submissions, whatever their moderation status. */
-  findMine(user: RequestUser): Promise<TestimonialDocument[]> {
-    return this.testimonialModel
-      .find({ deleted: false, createdBy: user.userId })
-      .populate('coverMedia')
-      .populate('media')
-      .exec();
+  findMine(
+    user: RequestUser,
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TestimonialDocument>> {
+    return paginate<TestimonialDocument>(
+      this.testimonialModel,
+      { deleted: false, createdBy: user.userId },
+      pagination,
+      { populate: ['coverMedia', 'media'] },
+    );
   }
 
   /**

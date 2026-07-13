@@ -123,8 +123,21 @@ describe('TouristSites moderation (e2e)', () => {
 
   it('hides the pending site from the public list', async () => {
     const res = await request(server()).get('/tourist-sites').expect(200);
-    expect(res.body.map((s: { _id: string }) => s._id)).not.toContain(siteId);
+    expect(res.body.data.map((s: { _id: string }) => s._id)).not.toContain(siteId);
   });
+
+  it('returns the paginated envelope on the public list', async () => {
+    const res = await request(server())
+      .get('/tourist-sites?page=1&limit=5')
+      .expect(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.page).toBe(1);
+    expect(res.body.limit).toBe(5);
+    expect(typeof res.body.total).toBe('number');
+  });
+
+  it('rejects an invalid pagination query', () =>
+    request(server()).get('/tourist-sites?page=0&limit=abc').expect(400));
 
   it('returns 404 on the public detail of a pending site', () =>
     request(server()).get(`/tourist-sites/${siteId}`).expect(404));
@@ -134,7 +147,7 @@ describe('TouristSites moderation (e2e)', () => {
       .get('/tourist-sites/mine')
       .set('Authorization', `Bearer ${userToken}`)
       .expect(200);
-    const mine = res.body.find((s: { _id: string }) => s._id === siteId);
+    const mine = res.body.data.find((s: { _id: string }) => s._id === siteId);
     expect(mine).toBeDefined();
     expect(mine.status).toBe('pending');
   });
@@ -150,7 +163,7 @@ describe('TouristSites moderation (e2e)', () => {
       .get('/tourist-sites/pending')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
-    expect(res.body.map((s: { _id: string }) => s._id)).toContain(siteId);
+    expect(res.body.data.map((s: { _id: string }) => s._id)).toContain(siteId);
   });
 
   it('forbids non-admins from approving', () =>
@@ -168,7 +181,7 @@ describe('TouristSites moderation (e2e)', () => {
     expect(res.body.reviewedBy).toBeDefined();
 
     const list = await request(server()).get('/tourist-sites').expect(200);
-    expect(list.body.map((s: { _id: string }) => s._id)).toContain(siteId);
+    expect(list.body.data.map((s: { _id: string }) => s._id)).toContain(siteId);
     await request(server()).get(`/tourist-sites/${siteId}`).expect(200);
   });
 
@@ -181,7 +194,7 @@ describe('TouristSites moderation (e2e)', () => {
     expect(res.body.status).toBe('pending');
 
     const list = await request(server()).get('/tourist-sites').expect(200);
-    expect(list.body.map((s: { _id: string }) => s._id)).not.toContain(siteId);
+    expect(list.body.data.map((s: { _id: string }) => s._id)).not.toContain(siteId);
   });
 
   it('auto-approves a submission created by an admin', async () => {
@@ -193,7 +206,7 @@ describe('TouristSites moderation (e2e)', () => {
     expect(res.body.status).toBe('approved');
 
     const list = await request(server()).get('/tourist-sites').expect(200);
-    expect(list.body.map((s: { _id: string }) => s._id)).toContain(
+    expect(list.body.data.map((s: { _id: string }) => s._id)).toContain(
       res.body._id,
     );
   });

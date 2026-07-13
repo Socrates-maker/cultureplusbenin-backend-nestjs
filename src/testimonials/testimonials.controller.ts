@@ -22,6 +22,7 @@ import { Action } from '../casl/action.enum';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { TestimonialSubjectType } from '../common/enums/testimonial.enum';
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 import { RejectTestimonialDto } from './dto/reject-testimonial.dto';
@@ -44,10 +45,11 @@ export class TestimonialsController {
     description: 'Filter by subject id (city, tourist site or historical figure)',
   })
   findAll(
+    @Query() pagination: PaginationQueryDto,
     @Query('subjectType') subjectType?: TestimonialSubjectType,
     @Query('subject') subject?: string,
   ) {
-    return this.testimonialsService.findAll({ subjectType, subject });
+    return this.testimonialsService.findAll({ subjectType, subject }, pagination);
   }
 
   @Get('mine')
@@ -56,8 +58,11 @@ export class TestimonialsController {
   @ApiOperation({
     summary: 'List my own testimonial submissions (any moderation status)',
   })
-  findMine(@CurrentUser() user: RequestUser) {
-    return this.testimonialsService.findMine(user);
+  findMine(
+    @CurrentUser() user: RequestUser,
+    @Query() pagination: PaginationQueryDto,
+  ) {
+    return this.testimonialsService.findMine(user, pagination);
   }
 
   @Get('pending')
@@ -65,8 +70,8 @@ export class TestimonialsController {
   @ApiBearerAuth()
   @CheckPolicies((ability) => ability.can(Action.Approve, 'Testimonial'))
   @ApiOperation({ summary: 'List testimonials awaiting validation (admin)' })
-  findPending() {
-    return this.testimonialsService.findPending();
+  findPending(@Query() pagination: PaginationQueryDto) {
+    return this.testimonialsService.findPending(pagination);
   }
 
   @Get(':id')
