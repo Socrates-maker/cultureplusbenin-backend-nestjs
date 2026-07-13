@@ -22,6 +22,7 @@ import { Action } from '../casl/action.enum';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CreateTouristSiteDto } from './dto/create-tourist-site.dto';
 import { RejectTouristSiteDto } from './dto/reject-tourist-site.dto';
 import { UpdateTouristSiteDto } from './dto/update-tourist-site.dto';
@@ -43,8 +44,12 @@ export class TouristSitesController {
     required: false,
     description: 'Free text search on name, description and history',
   })
-  findAll(@Query('city') city?: string, @Query('search') search?: string) {
-    return this.touristSitesService.findAll(city, search);
+  findAll(
+    @Query() pagination: PaginationQueryDto,
+    @Query('city') city?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.touristSitesService.findAll(city, search, pagination);
   }
 
   @Get('mine')
@@ -53,8 +58,11 @@ export class TouristSitesController {
   @ApiOperation({
     summary: 'List my own tourist site submissions (any moderation status)',
   })
-  findMine(@CurrentUser() user: RequestUser) {
-    return this.touristSitesService.findMine(user);
+  findMine(
+    @CurrentUser() user: RequestUser,
+    @Query() pagination: PaginationQueryDto,
+  ) {
+    return this.touristSitesService.findMine(user, pagination);
   }
 
   @Get('pending')
@@ -64,8 +72,8 @@ export class TouristSitesController {
   @ApiOperation({
     summary: 'List tourist sites awaiting validation (admin)',
   })
-  findPending() {
-    return this.touristSitesService.findPending();
+  findPending(@Query() pagination: PaginationQueryDto) {
+    return this.touristSitesService.findPending(pagination);
   }
 
   @Get(':id')

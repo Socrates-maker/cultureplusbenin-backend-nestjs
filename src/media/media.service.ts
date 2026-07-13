@@ -12,6 +12,11 @@ import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { MediaOwnerType, MediaType } from '../common/enums/media.enum';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+} from '../common/utils/pagination.util';
 import { Role } from '../common/enums/role.enum';
 import { GalleriesService } from '../galleries/galleries.service';
 import { HistoricalFiguresService } from '../historical-figures/historical-figures.service';
@@ -102,12 +107,15 @@ export class MediaService {
     throw new BadRequestException(`Unsupported file type: ${mimetype}`);
   }
 
-  findAll(filter: MediaFilter = {}): Promise<MediaDocument[]> {
+  findAll(
+    filter: MediaFilter = {},
+    pagination: PageOptions = {},
+  ): Promise<Paginated<MediaDocument>> {
     const query: Record<string, unknown> = { deleted: false };
     if (filter.ownerType) query.ownerType = filter.ownerType;
     if (filter.owner) query.owner = filter.owner;
     if (filter.type) query.type = filter.type;
-    return this.mediaModel.find(query).exec();
+    return paginate<MediaDocument>(this.mediaModel, query, pagination);
   }
 
   async findById(id: string): Promise<MediaDocument> {

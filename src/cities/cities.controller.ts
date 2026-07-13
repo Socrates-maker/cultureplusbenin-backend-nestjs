@@ -22,6 +22,7 @@ import { Action } from '../casl/action.enum';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CitiesService } from './cities.service';
 import { CreateCityDto } from './dto/create-city.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
@@ -38,8 +39,11 @@ export class CitiesController {
     required: false,
     description: 'Free text search on name, description and history',
   })
-  findAll(@Query('search') search?: string) {
-    return this.citiesService.findAll(search);
+  findAll(
+    @Query() pagination: PaginationQueryDto,
+    @Query('search') search?: string,
+  ) {
+    return this.citiesService.findAll(search, pagination);
   }
 
   @Get(':id')

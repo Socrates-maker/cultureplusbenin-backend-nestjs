@@ -10,6 +10,11 @@ import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { buildSearchFilter } from '../common/utils/search.util';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+} from '../common/utils/pagination.util';
 import { CreateHistoricalFigureDto } from './dto/create-historical-figure.dto';
 import { UpdateHistoricalFigureDto } from './dto/update-historical-figure.dto';
 import {
@@ -42,7 +47,8 @@ export class HistoricalFiguresService {
   findAll(
     cityId?: string,
     search?: string,
-  ): Promise<HistoricalFigureDocument[]> {
+    pagination: PageOptions = {},
+  ): Promise<Paginated<HistoricalFigureDocument>> {
     const filter: Record<string, unknown> = { deleted: false };
     if (cityId) {
       filter.city = cityId;
@@ -55,7 +61,12 @@ export class HistoricalFiguresService {
     if (searchFilter) {
       Object.assign(filter, searchFilter);
     }
-    return this.historicalFigureModel.find(filter).populate('media').exec();
+    return paginate<HistoricalFigureDocument>(
+      this.historicalFigureModel,
+      filter,
+      pagination,
+      { populate: ['media'] },
+    );
   }
 
   async findById(id: string): Promise<HistoricalFigureDocument> {
