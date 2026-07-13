@@ -43,14 +43,32 @@ export class HistoricalFiguresController {
   @ApiQuery({
     name: 'search',
     required: false,
-    description: 'Free text search on name, description and biography',
+    description: 'Free text search on name, description, biography and tags',
+  })
+  @ApiQuery({
+    name: 'tags',
+    required: false,
+    description:
+      'Comma-separated tags; matches figures carrying at least one of them',
   })
   findAll(
     @Query() pagination: PaginationQueryDto,
     @Query('city') city?: string,
     @Query('search') search?: string,
+    @Query('tags') tags?: string,
   ) {
-    return this.historicalFiguresService.findAll(city, search, pagination);
+    return this.historicalFiguresService.findAll(
+      city,
+      search,
+      tags,
+      pagination,
+    );
+  }
+
+  @Get('tags')
+  @ApiOperation({ summary: 'List all tags used by historical figures' })
+  listTags() {
+    return this.historicalFiguresService.listTags();
   }
 
   @Get(':id')

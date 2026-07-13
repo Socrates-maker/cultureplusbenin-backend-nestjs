@@ -57,6 +57,10 @@ export class TouristSite {
   @Prop()
   rejectionReason?: string;
 
+  // Free-form filtering tags, stored normalized (trimmed lowercase, deduped).
+  @Prop({ type: [String], index: true, default: undefined })
+  tags?: string[];
+
   @Prop({ default: false })
   deleted: boolean;
 }

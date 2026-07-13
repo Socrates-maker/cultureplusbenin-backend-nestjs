@@ -15,6 +15,7 @@ import {
   Paginated,
   paginate,
 } from '../common/utils/pagination.util';
+import { buildTagsFilter } from '../common/utils/tags.util';
 import { MediaType } from '../common/enums/media.enum';
 import { ModerationStatus } from '../common/enums/moderation-status.enum';
 import { Role } from '../common/enums/role.enum';
@@ -70,6 +71,7 @@ export class TestimonialsService {
     filter: {
       subjectType?: TestimonialSubjectType;
       subject?: string;
+      tags?: string;
     } = {},
     pagination: PageOptions = {},
   ): Promise<Paginated<TestimonialDocument>> {
@@ -79,12 +81,27 @@ export class TestimonialsService {
     };
     if (filter.subjectType) query.subjectType = filter.subjectType;
     if (filter.subject) query.subject = filter.subject;
+    const tagsFilter = buildTagsFilter(filter.tags);
+    if (tagsFilter) Object.assign(query, tagsFilter);
     return paginate<TestimonialDocument>(
       this.testimonialModel,
       query,
       pagination,
       { populate: ['coverMedia', 'media'] },
     );
+  }
+
+  /** Distinct tags across visible testimonials (filter UIs / autocomplete). */
+  async listTags(): Promise<string[]> {
+    const tags = await this.testimonialModel
+      .distinct('tags', {
+        deleted: false,
+        status: {
+          $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED],
+        },
+      })
+      .exec();
+    return (tags as string[]).sort();
   }
 
   /** Moderation queue: testimonials awaiting admin validation (admin only). */

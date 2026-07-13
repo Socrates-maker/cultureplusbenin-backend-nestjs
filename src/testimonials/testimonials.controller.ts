@@ -44,12 +44,30 @@ export class TestimonialsController {
     required: false,
     description: 'Filter by subject id (city, tourist site or historical figure)',
   })
+  @ApiQuery({
+    name: 'tags',
+    required: false,
+    description:
+      'Comma-separated tags; matches testimonials carrying at least one of them',
+  })
   findAll(
     @Query() pagination: PaginationQueryDto,
     @Query('subjectType') subjectType?: TestimonialSubjectType,
     @Query('subject') subject?: string,
+    @Query('tags') tags?: string,
   ) {
-    return this.testimonialsService.findAll({ subjectType, subject }, pagination);
+    return this.testimonialsService.findAll(
+      { subjectType, subject, tags },
+      pagination,
+    );
+  }
+
+  @Get('tags')
+  @ApiOperation({
+    summary: 'List all tags used by publicly visible testimonials',
+  })
+  listTags() {
+    return this.testimonialsService.listTags();
   }
 
   @Get('mine')

@@ -28,6 +28,10 @@ export class HistoricalFigure {
   })
   city: Types.ObjectId;
 
+  // Free-form filtering tags, stored normalized (trimmed lowercase, deduped).
+  @Prop({ type: [String], index: true, default: undefined })
+  tags?: string[];
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
 
