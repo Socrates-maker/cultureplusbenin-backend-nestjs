@@ -42,6 +42,16 @@ export class HistoricalFigure {
 export const HistoricalFigureSchema =
   SchemaFactory.createForClass(HistoricalFigure);
 
+// Weighted French text index backing GET /search (see SearchService).
+HistoricalFigureSchema.index(
+  { name: 'text', tags: 'text', description: 'text', biography: 'text' },
+  {
+    name: 'historical_figure_text_search',
+    weights: { name: 10, tags: 5, description: 3, biography: 1 },
+    default_language: 'french',
+  },
+);
+
 // Virtual relation to the media (images / videos / audios) of this figure.
 HistoricalFigureSchema.virtual('media', {
   ref: 'Media',

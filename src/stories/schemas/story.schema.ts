@@ -44,6 +44,16 @@ export class Story {
 
 export const StorySchema = SchemaFactory.createForClass(Story);
 
+// Weighted French text index backing GET /search (see SearchService).
+StorySchema.index(
+  { title: 'text', tags: 'text', description: 'text', body: 'text' },
+  {
+    name: 'story_text_search',
+    weights: { title: 10, tags: 5, description: 3, body: 1 },
+    default_language: 'french',
+  },
+);
+
 // Virtual relation to the media (images / videos / audios) of this story.
 StorySchema.virtual('media', {
   ref: 'Media',

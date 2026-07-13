@@ -1,5 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { getConnectionToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Connection } from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import { App } from 'supertest/types';
@@ -35,6 +37,12 @@ describe('Stories / Traditions / Events / Favorites (e2e)', () => {
       new ValidationPipe({ whitelist: true, transform: true }),
     );
     await app.init();
+
+    // Global search relies on the text indexes: wait until they are built.
+    const connection = app.get<Connection>(getConnectionToken());
+    await Promise.all(
+      Object.values(connection.models).map((model) => model.init()),
+    );
 
     const usersService = app.get(UsersService);
     await usersService.create({
@@ -244,6 +252,93 @@ describe('Stories / Traditions / Events / Favorites (e2e)', () => {
       .send({ itemType: 'Event', item: '507f1f77bcf86cd799439099' })
       .expect(404);
     await request(server()).get('/favorites').expect(401);
+  });
+
+  it('globally searches across content types, ranked by title match', async () => {
+    const res = await request(server()).get('/search?q=Béhanzin').expect(200);
+    const story = res.body.results.find(
+      (r: { id: string }) => r.id === storyId,
+    );
+    expect(story).toBeDefined();
+    expect(story.type).toBe('story');
+    // Title matches rank first.
+    expect(res.body.results[0].title).toContain('Béhanzin');
+
+    const tradition = await request(server())
+      .get('/search?q=gèlèdé')
+      .expect(200);
+    expect(
+      tradition.body.results.map((r: { id: string }) => r.id),
+    ).toContain(traditionId);
+
+    const none = await request(server())
+      .get('/search?q=zzzzintrouvable')
+      .expect(200);
+    expect(none.body.results).toHaveLength(0);
+  });
+
+  it('matches accent-insensitively (text index) and partial words (fallback)', async () => {
+    // "behanzin" only matches "Béhanzin" thanks to the French text index.
+    const accentless = await request(server())
+      .get('/search?q=behanzin')
+      .expect(200);
+    expect(
+      accentless.body.results.map((r: { id: string }) => r.id),
+    ).toContain(storyId);
+
+    // "Béhan" is a partial word: $text finds nothing, the regex fallback does.
+    const partial = await request(server())
+      .get('/search?q=Béhan')
+      .expect(200);
+    expect(partial.body.results.map((r: { id: string }) => r.id)).toContain(
+      storyId,
+    );
+
+    // Partial AND accentless: the fallback regex must fold accents too.
+    const partialAccentless = await request(server())
+      .get('/search?q=behan')
+      .expect(200);
+    expect(
+      partialAccentless.body.results.map((r: { id: string }) => r.id),
+    ).toContain(storyId);
+  });
+
+  it('rejects a missing or too-short search query', async () => {
+    await request(server()).get('/search').expect(400);
+    await request(server()).get('/search?q=a').expect(400);
+  });
+
+  it('hides pending submissions from the global search', async () => {
+    // A regular user's tourist site stays pending — invisible to search.
+    const cityId = (
+      await request(server())
+        .post('/cities')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Ouidah',
+          description: 'Ville historique.',
+          location: { latitude: 6.3626, longitude: 2.0853 },
+        })
+        .expect(201)
+    ).body._id;
+    const pending = await request(server())
+      .post('/tourist-sites')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        name: 'Site secret en attente',
+        description: 'Ne doit pas sortir dans la recherche.',
+        location: { latitude: 6.36, longitude: 2.08 },
+        city: cityId,
+      })
+      .expect(201);
+    expect(pending.body.status).toBe('pending');
+
+    const res = await request(server())
+      .get('/search?q=Site secret')
+      .expect(200);
+    expect(res.body.results.map((r: { id: string }) => r.id)).not.toContain(
+      pending.body._id,
+    );
   });
 
   it("keeps favorites scoped to their owner and removes idempotently", async () => {

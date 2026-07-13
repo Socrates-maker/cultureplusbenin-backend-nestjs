@@ -37,6 +37,17 @@ export class City {
 
 export const CitySchema = SchemaFactory.createForClass(City);
 
+// Weighted French text index backing GET /search (see SearchService).
+// Diacritic- and case-insensitive, with French stemming and stop-words.
+CitySchema.index(
+  { name: 'text', tags: 'text', description: 'text', history: 'text' },
+  {
+    name: 'city_text_search',
+    weights: { name: 10, tags: 5, description: 3, history: 1 },
+    default_language: 'french',
+  },
+);
+
 // Virtual relation to the media (images / videos / audios) of this city.
 CitySchema.virtual('media', {
   ref: 'Media',

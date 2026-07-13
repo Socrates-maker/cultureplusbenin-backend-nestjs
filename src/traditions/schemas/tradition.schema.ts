@@ -40,6 +40,16 @@ export class Tradition {
 
 export const TraditionSchema = SchemaFactory.createForClass(Tradition);
 
+// Weighted French text index backing GET /search (see SearchService).
+TraditionSchema.index(
+  { title: 'text', tags: 'text', description: 'text', origin: 'text' },
+  {
+    name: 'tradition_text_search',
+    weights: { title: 10, tags: 5, description: 3, origin: 1 },
+    default_language: 'french',
+  },
+);
+
 // Virtual relation to the media (images / videos / audios) of this tradition.
 TraditionSchema.virtual('media', {
   ref: 'Media',
