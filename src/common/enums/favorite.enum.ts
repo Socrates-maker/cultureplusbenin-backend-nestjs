@@ -1,6 +1,6 @@
-// The kind of entity a testimonial is about. Values match the Mongoose model
+// The kind of entity a user can bookmark. Values match the Mongoose model
 // names so they can drive a dynamic `refPath`.
-export enum TestimonialSubjectType {
+export enum FavoriteItemType {
   CITY = 'City',
   TOURIST_SITE = 'TouristSite',
   HISTORICAL_FIGURE = 'HistoricalFigure',

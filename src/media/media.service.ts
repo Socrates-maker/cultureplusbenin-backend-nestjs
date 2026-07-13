@@ -19,7 +19,10 @@ import {
 } from '../common/utils/pagination.util';
 import { buildTagsFilter } from '../common/utils/tags.util';
 import { Role } from '../common/enums/role.enum';
+import { EventsService } from '../events/events.service';
 import { GalleriesService } from '../galleries/galleries.service';
+import { StoriesService } from '../stories/stories.service';
+import { TraditionsService } from '../traditions/traditions.service';
 import { HistoricalFiguresService } from '../historical-figures/historical-figures.service';
 import { TestimonialsService } from '../testimonials/testimonials.service';
 import { TouristSitesService } from '../tourist-sites/tourist-sites.service';
@@ -43,6 +46,9 @@ export class MediaService {
     private readonly galleriesService: GalleriesService,
     private readonly historicalFiguresService: HistoricalFiguresService,
     private readonly testimonialsService: TestimonialsService,
+    private readonly storiesService: StoriesService,
+    private readonly traditionsService: TraditionsService,
+    private readonly eventsService: EventsService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -191,6 +197,15 @@ export class MediaService {
         break;
       case MediaOwnerType.TESTIMONIAL:
         await this.testimonialsService.findById(owner);
+        break;
+      case MediaOwnerType.STORY:
+        await this.storiesService.findById(owner);
+        break;
+      case MediaOwnerType.TRADITION:
+        await this.traditionsService.findById(owner);
+        break;
+      case MediaOwnerType.EVENT:
+        await this.eventsService.findById(owner);
         break;
     }
   }

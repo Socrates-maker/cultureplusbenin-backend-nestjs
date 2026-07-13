@@ -15,7 +15,10 @@ import {
   Paginated,
   paginate,
 } from '../common/utils/pagination.util';
+import { EventsService } from '../events/events.service';
+import { StoriesService } from '../stories/stories.service';
 import { TouristSitesService } from '../tourist-sites/tourist-sites.service';
+import { TraditionsService } from '../traditions/traditions.service';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 import { UpdateGalleryDto } from './dto/update-gallery.dto';
 import { Gallery, GalleryDocument } from './schemas/gallery.schema';
@@ -32,6 +35,9 @@ export class GalleriesService {
     private readonly galleryModel: Model<GalleryDocument>,
     private readonly citiesService: CitiesService,
     private readonly touristSitesService: TouristSitesService,
+    private readonly storiesService: StoriesService,
+    private readonly traditionsService: TraditionsService,
+    private readonly eventsService: EventsService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
   ) {}
 
@@ -92,10 +98,22 @@ export class GalleriesService {
     ownerType: GalleryOwnerType,
     owner: string,
   ): Promise<void> {
-    if (ownerType === GalleryOwnerType.CITY) {
-      await this.citiesService.findById(owner);
-    } else {
-      await this.touristSitesService.findById(owner);
+    switch (ownerType) {
+      case GalleryOwnerType.CITY:
+        await this.citiesService.findById(owner);
+        break;
+      case GalleryOwnerType.TOURIST_SITE:
+        await this.touristSitesService.findById(owner);
+        break;
+      case GalleryOwnerType.STORY:
+        await this.storiesService.findById(owner);
+        break;
+      case GalleryOwnerType.TRADITION:
+        await this.traditionsService.findById(owner);
+        break;
+      case GalleryOwnerType.EVENT:
+        await this.eventsService.findById(owner);
+        break;
     }
   }
 

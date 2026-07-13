@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CitiesModule } from '../cities/cities.module';
+import { EventsModule } from '../events/events.module';
 import { HistoricalFiguresModule } from '../historical-figures/historical-figures.module';
+import { StoriesModule } from '../stories/stories.module';
+import { TraditionsModule } from '../traditions/traditions.module';
 import { Media, MediaSchema } from '../media/schemas/media.schema';
 import { TouristSitesModule } from '../tourist-sites/tourist-sites.module';
 import { TestimonialsController } from './testimonials.controller';
@@ -23,6 +26,9 @@ import {
     CitiesModule,
     TouristSitesModule,
     HistoricalFiguresModule,
+    StoriesModule,
+    TraditionsModule,
+    EventsModule,
   ],
   controllers: [TestimonialsController],
   providers: [TestimonialsService],

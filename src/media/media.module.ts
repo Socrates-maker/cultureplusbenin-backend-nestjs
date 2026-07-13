@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CitiesModule } from '../cities/cities.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { EventsModule } from '../events/events.module';
 import { GalleriesModule } from '../galleries/galleries.module';
+import { StoriesModule } from '../stories/stories.module';
+import { TraditionsModule } from '../traditions/traditions.module';
 import { HistoricalFiguresModule } from '../historical-figures/historical-figures.module';
 import { TestimonialsModule } from '../testimonials/testimonials.module';
 import { TouristSitesModule } from '../tourist-sites/tourist-sites.module';
@@ -18,6 +21,9 @@ import { Media, MediaSchema } from './schemas/media.schema';
     GalleriesModule,
     HistoricalFiguresModule,
     TestimonialsModule,
+    StoriesModule,
+    TraditionsModule,
+    EventsModule,
     CloudinaryModule,
   ],
   controllers: [MediaController],

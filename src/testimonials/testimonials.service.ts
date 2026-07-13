@@ -20,7 +20,10 @@ import { MediaType } from '../common/enums/media.enum';
 import { ModerationStatus } from '../common/enums/moderation-status.enum';
 import { Role } from '../common/enums/role.enum';
 import { TestimonialSubjectType } from '../common/enums/testimonial.enum';
+import { EventsService } from '../events/events.service';
 import { HistoricalFiguresService } from '../historical-figures/historical-figures.service';
+import { StoriesService } from '../stories/stories.service';
+import { TraditionsService } from '../traditions/traditions.service';
 import { Media, MediaDocument } from '../media/schemas/media.schema';
 import { TouristSitesService } from '../tourist-sites/tourist-sites.service';
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
@@ -40,6 +43,9 @@ export class TestimonialsService {
     private readonly citiesService: CitiesService,
     private readonly touristSitesService: TouristSitesService,
     private readonly historicalFiguresService: HistoricalFiguresService,
+    private readonly storiesService: StoriesService,
+    private readonly traditionsService: TraditionsService,
+    private readonly eventsService: EventsService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
   ) {}
 
@@ -249,6 +255,15 @@ export class TestimonialsService {
         break;
       case TestimonialSubjectType.HISTORICAL_FIGURE:
         await this.historicalFiguresService.findById(subjectId);
+        break;
+      case TestimonialSubjectType.STORY:
+        await this.storiesService.findById(subjectId);
+        break;
+      case TestimonialSubjectType.TRADITION:
+        await this.traditionsService.findById(subjectId);
+        break;
+      case TestimonialSubjectType.EVENT:
+        await this.eventsService.findById(subjectId);
         break;
     }
   }

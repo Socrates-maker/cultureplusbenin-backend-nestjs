@@ -2,4 +2,7 @@
 export enum GalleryOwnerType {
   CITY = 'City',
   TOURIST_SITE = 'TouristSite',
+  STORY = 'Story',
+  TRADITION = 'Tradition',
+  EVENT = 'Event',
 }
