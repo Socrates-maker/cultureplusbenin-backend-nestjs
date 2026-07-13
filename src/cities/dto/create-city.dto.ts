@@ -6,6 +6,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { TagsField } from '../../common/decorators/tags-field.decorator';
 import { LocationDto } from '../../common/dto/location.dto';
 
 export class CreateCityDto {
@@ -31,4 +32,7 @@ export class CreateCityDto {
   @ValidateNested()
   @Type(() => LocationDto)
   location: LocationDto;
+
+  @TagsField()
+  tags?: string[];
 }

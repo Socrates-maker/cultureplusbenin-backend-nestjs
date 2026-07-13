@@ -47,13 +47,29 @@ export class MediaController {
     description: 'Owner resource id',
   })
   @ApiQuery({ name: 'type', required: false, enum: MediaType })
+  @ApiQuery({
+    name: 'tags',
+    required: false,
+    description:
+      'Comma-separated tags; matches media carrying at least one of them',
+  })
   findAll(
     @Query() pagination: PaginationQueryDto,
     @Query('ownerType') ownerType?: MediaOwnerType,
     @Query('owner') owner?: string,
     @Query('type') type?: MediaType,
+    @Query('tags') tags?: string,
   ) {
-    return this.mediaService.findAll({ ownerType, owner, type }, pagination);
+    return this.mediaService.findAll(
+      { ownerType, owner, type, tags },
+      pagination,
+    );
+  }
+
+  @Get('tags')
+  @ApiOperation({ summary: 'List all tags used by media' })
+  listTags() {
+    return this.mediaService.listTags();
   }
 
   @Get(':id')

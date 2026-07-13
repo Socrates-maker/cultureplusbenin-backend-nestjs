@@ -139,6 +139,43 @@ describe('TouristSites moderation (e2e)', () => {
   it('rejects an invalid pagination query', () =>
     request(server()).get('/tourist-sites?page=0&limit=abc').expect(400));
 
+  it('normalizes tags on create and filters the public list by tags', async () => {
+    // Admin submissions are auto-approved, hence publicly visible right away.
+    const created = await request(server())
+      .post('/tourist-sites')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        ...siteBody('Forêt sacrée de Kpassè'),
+        tags: [' Vaudou ', 'NATURE', 'vaudou'],
+      })
+      .expect(201);
+    expect(created.body.tags).toEqual(['vaudou', 'nature']);
+    const taggedId = created.body._id;
+
+    const filtered = await request(server())
+      .get('/tourist-sites?tags=VAUDOU')
+      .expect(200);
+    expect(filtered.body.data.map((s: { _id: string }) => s._id)).toContain(
+      taggedId,
+    );
+
+    const excluded = await request(server())
+      .get('/tourist-sites?tags=inexistant')
+      .expect(200);
+    expect(excluded.body.data).toHaveLength(0);
+
+    const tags = await request(server()).get('/tourist-sites/tags').expect(200);
+    expect(tags.body).toEqual(expect.arrayContaining(['nature', 'vaudou']));
+
+    // Free text search also matches tags.
+    const searched = await request(server())
+      .get('/tourist-sites?search=vaudou')
+      .expect(200);
+    expect(searched.body.data.map((s: { _id: string }) => s._id)).toContain(
+      taggedId,
+    );
+  });
+
   it('returns 404 on the public detail of a pending site', () =>
     request(server()).get(`/tourist-sites/${siteId}`).expect(404));
 

@@ -10,6 +10,7 @@ import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { buildSearchFilter } from '../common/utils/search.util';
+import { buildTagsFilter } from '../common/utils/tags.util';
 import {
   PageOptions,
   Paginated,
@@ -61,6 +62,7 @@ export class TouristSitesService {
   findAll(
     cityId?: string,
     search?: string,
+    tags?: string,
     pagination: PageOptions = {},
   ): Promise<Paginated<TouristSiteDocument>> {
     const filter: Record<string, unknown> = {
@@ -74,13 +76,31 @@ export class TouristSitesService {
       'name',
       'description',
       'history',
+      'tags',
     ]);
     if (searchFilter) {
       Object.assign(filter, searchFilter);
     }
+    const tagsFilter = buildTagsFilter(tags);
+    if (tagsFilter) {
+      Object.assign(filter, tagsFilter);
+    }
     return paginate<TouristSiteDocument>(this.touristSiteModel, filter, pagination, {
       populate: ['media'],
     });
+  }
+
+  /** Distinct tags across publicly visible sites (filter UIs / autocomplete). */
+  async listTags(): Promise<string[]> {
+    const tags = await this.touristSiteModel
+      .distinct('tags', {
+        deleted: false,
+        status: {
+          $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED],
+        },
+      })
+      .exec();
+    return (tags as string[]).sort();
   }
 
   /** True when a site must be hidden from the public (awaiting / denied). */

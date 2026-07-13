@@ -23,6 +23,10 @@ export class City {
   @Prop({ type: LocationSchema, required: true })
   location: Location;
 
+  // Free-form filtering tags, stored normalized (trimmed lowercase, deduped).
+  @Prop({ type: [String], index: true, default: undefined })
+  tags?: string[];
+
   // Owner of the record — used by CASL to authorize updates/deletes.
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;

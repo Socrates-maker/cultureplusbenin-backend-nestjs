@@ -7,6 +7,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { TagsField } from '../../common/decorators/tags-field.decorator';
 import { LocationDto } from '../../common/dto/location.dto';
 
 export class CreateTouristSiteDto {
@@ -40,4 +41,7 @@ export class CreateTouristSiteDto {
   })
   @IsMongoId()
   city: string;
+
+  @TagsField()
+  tags?: string[];
 }

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { TagsField } from '../../common/decorators/tags-field.decorator';
 
 export class CreateHistoricalFigureDto {
   @ApiProperty({ example: 'Béhanzin' })
@@ -27,4 +28,7 @@ export class CreateHistoricalFigureDto {
   })
   @IsMongoId()
   city: string;
+
+  @TagsField()
+  tags?: string[];
 }

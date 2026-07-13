@@ -42,14 +42,29 @@ export class TouristSitesController {
   @ApiQuery({
     name: 'search',
     required: false,
-    description: 'Free text search on name, description and history',
+    description: 'Free text search on name, description, history and tags',
+  })
+  @ApiQuery({
+    name: 'tags',
+    required: false,
+    description:
+      'Comma-separated tags; matches sites carrying at least one of them',
   })
   findAll(
     @Query() pagination: PaginationQueryDto,
     @Query('city') city?: string,
     @Query('search') search?: string,
+    @Query('tags') tags?: string,
   ) {
-    return this.touristSitesService.findAll(city, search, pagination);
+    return this.touristSitesService.findAll(city, search, tags, pagination);
+  }
+
+  @Get('tags')
+  @ApiOperation({
+    summary: 'List all tags used by publicly visible tourist sites',
+  })
+  listTags() {
+    return this.touristSitesService.listTags();
   }
 
   @Get('mine')

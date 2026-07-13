@@ -37,13 +37,26 @@ export class CitiesController {
   @ApiQuery({
     name: 'search',
     required: false,
-    description: 'Free text search on name, description and history',
+    description: 'Free text search on name, description, history and tags',
+  })
+  @ApiQuery({
+    name: 'tags',
+    required: false,
+    description:
+      'Comma-separated tags; matches cities carrying at least one of them',
   })
   findAll(
     @Query() pagination: PaginationQueryDto,
     @Query('search') search?: string,
+    @Query('tags') tags?: string,
   ) {
-    return this.citiesService.findAll(search, pagination);
+    return this.citiesService.findAll(search, tags, pagination);
+  }
+
+  @Get('tags')
+  @ApiOperation({ summary: 'List all tags used by cities' })
+  listTags() {
+    return this.citiesService.listTags();
   }
 
   @Get(':id')

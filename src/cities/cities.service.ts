@@ -9,6 +9,7 @@ import { Model } from 'mongoose';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { buildSearchFilter } from '../common/utils/search.util';
+import { buildTagsFilter } from '../common/utils/tags.util';
 import {
   PageOptions,
   Paginated,
@@ -30,9 +31,10 @@ export class CitiesService {
     return city.save();
   }
 
-  /** Public listing, optionally filtered by a free text search. */
+  /** Public listing, optionally filtered by a free text search and tags. */
   findAll(
     search?: string,
+    tags?: string,
     pagination: PageOptions = {},
   ): Promise<Paginated<CityDocument>> {
     const filter: Record<string, unknown> = { deleted: false };
@@ -40,13 +42,26 @@ export class CitiesService {
       'name',
       'description',
       'history',
+      'tags',
     ]);
     if (searchFilter) {
       Object.assign(filter, searchFilter);
     }
+    const tagsFilter = buildTagsFilter(tags);
+    if (tagsFilter) {
+      Object.assign(filter, tagsFilter);
+    }
     return paginate<CityDocument>(this.cityModel, filter, pagination, {
       populate: ['media'],
     });
+  }
+
+  /** Distinct tags across visible cities (filter UIs / autocomplete). */
+  async listTags(): Promise<string[]> {
+    const tags = await this.cityModel
+      .distinct('tags', { deleted: false })
+      .exec();
+    return (tags as string[]).sort();
   }
 
   async findById(id: string): Promise<CityDocument> {
