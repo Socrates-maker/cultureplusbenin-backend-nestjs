@@ -6,11 +6,16 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CaslModule } from './casl/casl.module';
 import { CitiesModule } from './cities/cities.module';
+import { EventsModule } from './events/events.module';
+import { FavoritesModule } from './favorites/favorites.module';
 import { GalleriesModule } from './galleries/galleries.module';
+import { StoriesModule } from './stories/stories.module';
+import { TraditionsModule } from './traditions/traditions.module';
 import { HistoricalFiguresModule } from './historical-figures/historical-figures.module';
 import { MediaModule } from './media/media.module';
 import { MemoryModule } from './memory/memory.module';
 import { QuizModule } from './quiz/quiz.module';
+import { SearchModule } from './search/search.module';
 import { TouristSitesModule } from './tourist-sites/tourist-sites.module';
 import { UsersModule } from './users/users.module';
 import { TestimonialsModule } from './testimonials/testimonials.module';
@@ -38,6 +43,11 @@ import { TestimonialsModule } from './testimonials/testimonials.module';
     MemoryModule,
     TestimonialsModule,
     QuizModule,
+    StoriesModule,
+    TraditionsModule,
+    EventsModule,
+    FavoritesModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,32 +1,31 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 
-export type HistoricalFigureDocument = HydratedDocument<HistoricalFigure>;
+export type TraditionDocument = HydratedDocument<Tradition>;
 
 @Schema({
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
 })
-export class HistoricalFigure {
+export class Tradition {
   @Prop({ required: true, trim: true })
-  name: string;
+  title: string;
 
   @Prop({ required: true })
   description: string;
 
-  // Full biography of the figure (free text, optional).
+  // Origin of the tradition (free text, optional).
   @Prop()
-  biography?: string;
+  origin?: string;
 
-  // The city this historical figure is attached to.
+  // The city this tradition relates to (optional).
   @Prop({
     type: MongooseSchema.Types.ObjectId,
     ref: 'City',
-    required: true,
     index: true,
   })
-  city: Types.ObjectId;
+  city?: Types.ObjectId;
 
   // Free-form filtering tags, stored normalized (trimmed lowercase, deduped).
   @Prop({ type: [String], index: true, default: undefined })
@@ -39,23 +38,30 @@ export class HistoricalFigure {
   deleted: boolean;
 }
 
-export const HistoricalFigureSchema =
-  SchemaFactory.createForClass(HistoricalFigure);
+export const TraditionSchema = SchemaFactory.createForClass(Tradition);
 
 // Weighted French text index backing GET /search (see SearchService).
-HistoricalFigureSchema.index(
-  { name: 'text', tags: 'text', description: 'text', biography: 'text' },
+TraditionSchema.index(
+  { title: 'text', tags: 'text', description: 'text', origin: 'text' },
   {
-    name: 'historical_figure_text_search',
-    weights: { name: 10, tags: 5, description: 3, biography: 1 },
+    name: 'tradition_text_search',
+    weights: { title: 10, tags: 5, description: 3, origin: 1 },
     default_language: 'french',
   },
 );
 
-// Virtual relation to the media (images / videos / audios) of this figure.
-HistoricalFigureSchema.virtual('media', {
+// Virtual relation to the media (images / videos / audios) of this tradition.
+TraditionSchema.virtual('media', {
   ref: 'Media',
   localField: '_id',
   foreignField: 'owner',
-  match: { ownerType: 'HistoricalFigure', deleted: false },
+  match: { ownerType: 'Tradition', deleted: false },
+});
+
+// Virtual relation to the galleries attached to this tradition.
+TraditionSchema.virtual('galleries', {
+  ref: 'Gallery',
+  localField: '_id',
+  foreignField: 'owner',
+  match: { ownerType: 'Tradition', deleted: false },
 });

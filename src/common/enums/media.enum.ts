@@ -11,4 +11,7 @@ export enum MediaOwnerType {
   GALLERY = 'Gallery',
   HISTORICAL_FIGURE = 'HistoricalFigure',
   TESTIMONIAL = 'Testimonial',
+  STORY = 'Story',
+  TRADITION = 'Tradition',
+  EVENT = 'Event',
 }

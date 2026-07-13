@@ -18,7 +18,10 @@ export type SubjectName =
   | 'Gallery'
   | 'HistoricalFigure'
   | 'Media'
-  | 'Testimonial';
+  | 'Testimonial'
+  | 'Story'
+  | 'Tradition'
+  | 'Event';
 
 export type Subjects = SubjectName | ForcedSubject<SubjectName> | 'all';
 
@@ -49,12 +52,27 @@ export class CaslAbilityFactory {
       can(Action.Read, 'HistoricalFigure');
       can(Action.Read, 'Media');
       can(Action.Read, 'Testimonial');
+      can(Action.Read, 'Story');
+      can(Action.Read, 'Tradition');
+      can(Action.Read, 'Event');
       can(Action.Create, 'City');
       can(Action.Create, 'TouristSite');
       can(Action.Create, 'Gallery');
       can(Action.Create, 'HistoricalFigure');
       can(Action.Create, 'Media');
       can(Action.Create, 'Testimonial');
+      can(Action.Create, 'Story');
+      can(Action.Create, 'Tradition');
+      can(Action.Create, 'Event');
+      can([Action.Update, Action.Delete], 'Story', {
+        createdBy: user.userId,
+      });
+      can([Action.Update, Action.Delete], 'Tradition', {
+        createdBy: user.userId,
+      });
+      can([Action.Update, Action.Delete], 'Event', {
+        createdBy: user.userId,
+      });
       can([Action.Update, Action.Delete], 'City', { createdBy: user.userId });
       can([Action.Update, Action.Delete], 'TouristSite', {
         createdBy: user.userId,
@@ -81,6 +99,9 @@ export class CaslAbilityFactory {
       can(Action.Read, 'HistoricalFigure');
       can(Action.Read, 'Media');
       can(Action.Read, 'Testimonial');
+      can(Action.Read, 'Story');
+      can(Action.Read, 'Tradition');
+      can(Action.Read, 'Event');
       can([Action.Read, Action.Update], 'User', { _id: user.userId });
       // They may contribute tourist sites and testimonials, which stay pending
       // until an admin validates them, and manage their own submissions.
