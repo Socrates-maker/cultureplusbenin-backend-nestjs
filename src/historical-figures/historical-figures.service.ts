@@ -9,12 +9,12 @@ import { Model } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
-import { buildSearchFilter } from '../common/utils/search.util';
 import { buildTagsFilter } from '../common/utils/tags.util';
 import {
   PageOptions,
   Paginated,
   paginate,
+  paginateWithSearch,
 } from '../common/utils/pagination.util';
 import { CreateHistoricalFigureDto } from './dto/create-historical-figure.dto';
 import { UpdateHistoricalFigureDto } from './dto/update-historical-figure.dto';
@@ -55,22 +55,15 @@ export class HistoricalFiguresService {
     if (cityId) {
       filter.city = cityId;
     }
-    const searchFilter = buildSearchFilter(search, [
-      'name',
-      'description',
-      'biography',
-      'tags',
-    ]);
-    if (searchFilter) {
-      Object.assign(filter, searchFilter);
-    }
     const tagsFilter = buildTagsFilter(tags);
     if (tagsFilter) {
       Object.assign(filter, tagsFilter);
     }
-    return paginate<HistoricalFigureDocument>(
+    return paginateWithSearch<HistoricalFigureDocument>(
       this.historicalFigureModel,
       filter,
+      search,
+      ['name', 'description', 'biography', 'tags'],
       pagination,
       { populate: ['media'] },
     );

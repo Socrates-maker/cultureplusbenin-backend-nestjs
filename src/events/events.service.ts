@@ -9,12 +9,12 @@ import { Model } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
-import { buildSearchFilter } from '../common/utils/search.util';
 import { buildTagsFilter } from '../common/utils/tags.util';
 import {
   PageOptions,
   Paginated,
   paginate,
+  paginateWithSearch,
 } from '../common/utils/pagination.util';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -51,23 +51,19 @@ export class EventsService {
     if (filter.city) {
       query.city = filter.city;
     }
-    const searchFilter = buildSearchFilter(filter.search, [
-      'title',
-      'description',
-      'origin',
-      'tags',
-    ]);
-    if (searchFilter) {
-      Object.assign(query, searchFilter);
-    }
     const tagsFilter = buildTagsFilter(filter.tags);
     if (tagsFilter) {
       Object.assign(query, tagsFilter);
     }
-    return paginate<EventDocument>(this.eventModel, query, pagination, {
-      populate: ['media', 'galleries'],
-      sort: { date: 1 },
-    });
+    // Chronological by default; a text search re-sorts by relevance instead.
+    return paginateWithSearch<EventDocument>(
+      this.eventModel,
+      query,
+      filter.search,
+      ['title', 'description', 'origin', 'tags'],
+      pagination,
+      { populate: ['media', 'galleries'], sort: { date: 1 } },
+    );
   }
 
   /** Distinct tags across visible events (filter UIs / autocomplete). */

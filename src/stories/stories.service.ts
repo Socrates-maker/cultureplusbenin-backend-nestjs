@@ -10,12 +10,12 @@ import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { StoryCategory } from '../common/enums/story.enum';
-import { buildSearchFilter } from '../common/utils/search.util';
 import { buildTagsFilter } from '../common/utils/tags.util';
 import {
   PageOptions,
   Paginated,
   paginate,
+  paginateWithSearch,
 } from '../common/utils/pagination.util';
 import { CreateStoryDto } from './dto/create-story.dto';
 import { UpdateStoryDto } from './dto/update-story.dto';
@@ -56,22 +56,18 @@ export class StoriesService {
     if (filter.city) {
       query.city = filter.city;
     }
-    const searchFilter = buildSearchFilter(filter.search, [
-      'title',
-      'description',
-      'body',
-      'tags',
-    ]);
-    if (searchFilter) {
-      Object.assign(query, searchFilter);
-    }
     const tagsFilter = buildTagsFilter(filter.tags);
     if (tagsFilter) {
       Object.assign(query, tagsFilter);
     }
-    return paginate<StoryDocument>(this.storyModel, query, pagination, {
-      populate: ['media', 'galleries'],
-    });
+    return paginateWithSearch<StoryDocument>(
+      this.storyModel,
+      query,
+      filter.search,
+      ['title', 'description', 'body', 'tags'],
+      pagination,
+      { populate: ['media', 'galleries'] },
+    );
   }
 
   /** Distinct tags across visible stories (filter UIs / autocomplete). */

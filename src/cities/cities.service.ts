@@ -8,12 +8,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
-import { buildSearchFilter } from '../common/utils/search.util';
 import { buildTagsFilter } from '../common/utils/tags.util';
 import {
   PageOptions,
   Paginated,
   paginate,
+  paginateWithSearch,
 } from '../common/utils/pagination.util';
 import { City, CityDocument } from './schemas/city.schema';
 import { CreateCityDto } from './dto/create-city.dto';
@@ -38,22 +38,18 @@ export class CitiesService {
     pagination: PageOptions = {},
   ): Promise<Paginated<CityDocument>> {
     const filter: Record<string, unknown> = { deleted: false };
-    const searchFilter = buildSearchFilter(search, [
-      'name',
-      'description',
-      'history',
-      'tags',
-    ]);
-    if (searchFilter) {
-      Object.assign(filter, searchFilter);
-    }
     const tagsFilter = buildTagsFilter(tags);
     if (tagsFilter) {
       Object.assign(filter, tagsFilter);
     }
-    return paginate<CityDocument>(this.cityModel, filter, pagination, {
-      populate: ['media'],
-    });
+    return paginateWithSearch<CityDocument>(
+      this.cityModel,
+      filter,
+      search,
+      ['name', 'description', 'history', 'tags'],
+      pagination,
+      { populate: ['media'] },
+    );
   }
 
   /** Distinct tags across visible cities (filter UIs / autocomplete). */
