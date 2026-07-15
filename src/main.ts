@@ -13,6 +13,7 @@ async function bootstrap() {
       'http://localhost:5174',
       'http://localhost:4173',
       'https://cultureplusbenin-dashboard.vercel.app',
+      'https://culture-benin-1ijmv0j4p-socrates-ekpaliguidimes-projects.vercel.app/'
     ],
     credentials: true,
   });

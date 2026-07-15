@@ -277,6 +277,52 @@ describe('Stories / Traditions / Events / Favorites (e2e)', () => {
     expect(none.body.results).toHaveLength(0);
   });
 
+  it('section searches use the text index too (stemming, accents)', async () => {
+    // Plural "résistances" only matches "résistance" through French stemming.
+    const stemmed = await request(server())
+      .get('/stories?search=résistances')
+      .expect(200);
+    expect(stemmed.body.data.map((s: { _id: string }) => s._id)).toContain(
+      storyId,
+    );
+
+    // Accentless full word served by the text index on a section route.
+    const accentless = await request(server())
+      .get('/traditions?search=gelede')
+      .expect(200);
+    expect(
+      accentless.body.data.map((t: { _id: string }) => t._id),
+    ).toContain(traditionId);
+  });
+
+  it('ranks title matches first in the regex fallback of section searches', async () => {
+    // "abom" is a partial word, served by the regex fallback. Abomey matches
+    // on its NAME; Allada (created later, hence more recent) only matches in
+    // its description — the name match must still come first.
+    const abomey = await request(server())
+      .post('/cities')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Abomey',
+        description: 'Cité royale du Danxomè.',
+        location: { latitude: 7.1826, longitude: 1.9912 },
+      })
+      .expect(201);
+    await request(server())
+      .post('/cities')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Allada',
+        description: "Ville historique sur la route d'Abomey.",
+        location: { latitude: 6.6654, longitude: 2.1514 },
+      })
+      .expect(201);
+
+    const res = await request(server()).get('/cities?search=abom').expect(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.data[0]._id).toBe(abomey.body._id);
+  });
+
   it('matches accent-insensitively (text index) and partial words (fallback)', async () => {
     // "behanzin" only matches "Béhanzin" thanks to the French text index.
     const accentless = await request(server())

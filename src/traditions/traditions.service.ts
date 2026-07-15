@@ -9,12 +9,12 @@ import { Model } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
-import { buildSearchFilter } from '../common/utils/search.util';
 import { buildTagsFilter } from '../common/utils/tags.util';
 import {
   PageOptions,
   Paginated,
   paginate,
+  paginateWithSearch,
 } from '../common/utils/pagination.util';
 import { CreateTraditionDto } from './dto/create-tradition.dto';
 import { UpdateTraditionDto } from './dto/update-tradition.dto';
@@ -57,22 +57,18 @@ export class TraditionsService {
     if (filter.city) {
       query.city = filter.city;
     }
-    const searchFilter = buildSearchFilter(filter.search, [
-      'title',
-      'description',
-      'origin',
-      'tags',
-    ]);
-    if (searchFilter) {
-      Object.assign(query, searchFilter);
-    }
     const tagsFilter = buildTagsFilter(filter.tags);
     if (tagsFilter) {
       Object.assign(query, tagsFilter);
     }
-    return paginate<TraditionDocument>(this.traditionModel, query, pagination, {
-      populate: ['media', 'galleries'],
-    });
+    return paginateWithSearch<TraditionDocument>(
+      this.traditionModel,
+      query,
+      filter.search,
+      ['title', 'description', 'origin', 'tags'],
+      pagination,
+      { populate: ['media', 'galleries'] },
+    );
   }
 
   /** Distinct tags across visible traditions (filter UIs / autocomplete). */
