@@ -16,6 +16,7 @@ import { MediaModule } from './media/media.module';
 import { MemoryModule } from './memory/memory.module';
 import { QuizModule } from './quiz/quiz.module';
 import { SearchModule } from './search/search.module';
+import { StatsModule } from './stats/stats.module';
 import { TouristSitesModule } from './tourist-sites/tourist-sites.module';
 import { UsersModule } from './users/users.module';
 import { TestimonialsModule } from './testimonials/testimonials.module';
@@ -48,6 +49,7 @@ import { TestimonialsModule } from './testimonials/testimonials.module';
     EventsModule,
     FavoritesModule,
     SearchModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
