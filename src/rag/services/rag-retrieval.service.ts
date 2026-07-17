@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { OpenAIEmbeddings } from '@langchain/openai';
+import type { EmbeddingsInterface } from '@langchain/core/embeddings';
+import { createRagEmbeddings } from './rag-embeddings.factory';
 import { RagChunk, RagChunkDocument } from '../schemas/rag-chunk.schema';
 import { MIN_SIMILARITY_SCORE, RagSourceType } from '../rag.constants';
 
@@ -23,13 +24,12 @@ export interface StructuredFilters {
 
 @Injectable()
 export class RagRetrievalService {
-  private readonly embeddings?: OpenAIEmbeddings;
-  private readonly hasOpenAiKey = Boolean(process.env.OPENAI_API_KEY?.trim());
+  // Même provider que l'ingestion (RAG_EMBEDDINGS_PROVIDER) : les vecteurs de
+  // la question doivent vivre dans le même espace que les chunks indexés.
+  private readonly embeddings?: EmbeddingsInterface;
 
   constructor(@InjectModel(RagChunk.name) private readonly ragChunkModel: Model<RagChunkDocument>) {
-    if (this.hasOpenAiKey) {
-      this.embeddings = new OpenAIEmbeddings({ model: 'text-embedding-3-small' });
-    }
+    this.embeddings = createRagEmbeddings('query')?.embeddings;
   }
 
   /**

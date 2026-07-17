@@ -43,6 +43,12 @@ export class RagChunk {
   @Prop({ default: 1 })
   embeddingVersion: number;
 
+  // Provider ayant produit le vecteur ('openai' | 'gemini'). Tous les chunks
+  // doivent partager le même provider que RAG_EMBEDDINGS_PROVIDER — sinon,
+  // réindexer (POST /rag/admin/reindex/:sourceType).
+  @Prop({ default: 'openai' })
+  embeddingProvider: string;
+
   // Métadonnées structurées pour le filtrage hybride ($match + $vectorSearch)
   @ApiProperty({ type: Object, description: 'Métadonnées structurées pour le filtrage hybride' })
   @Prop({ type: Object, default: {} })
