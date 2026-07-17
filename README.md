@@ -42,6 +42,9 @@ JWT_EXPIRES_IN=1d
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
+
+# RAG / chatbot culturel
+OPENAI_API_KEY=your-openai-api-key
 ```
 
 ### Data model
