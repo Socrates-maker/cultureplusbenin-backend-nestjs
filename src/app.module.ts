@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -17,6 +18,7 @@ import { MemoryModule } from './memory/memory.module';
 import { QuizModule } from './quiz/quiz.module';
 import { SearchModule } from './search/search.module';
 import { StatsModule } from './stats/stats.module';
+import { RagModule } from './rag/rag.module';
 import { TouristSitesModule } from './tourist-sites/tourist-sites.module';
 import { UsersModule } from './users/users.module';
 import { TestimonialsModule } from './testimonials/testimonials.module';
@@ -26,6 +28,7 @@ import { TestimonialsModule } from './testimonials/testimonials.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    EventEmitterModule.forRoot(),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -43,6 +46,7 @@ import { TestimonialsModule } from './testimonials/testimonials.module';
     MediaModule,
     MemoryModule,
     TestimonialsModule,
+    RagModule,
     QuizModule,
     StoriesModule,
     TraditionsModule,
