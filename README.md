@@ -23,6 +23,87 @@
 
 ## Description
 
+Backend API for **CulturePlus Benin** — a dashboard where authorized users register
+Beninese **cities** (villes) and their **tourist sites** (lieux touristiques).
+Built with NestJS, MongoDB (Mongoose), Passport (JWT) authentication, and CASL for
+role-based permissions. API documentation is served by Swagger at `/docs`.
+
+### Environment
+
+Copy `.env.example` to `.env` and adjust:
+
+```bash
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/cultureplusbenin
+JWT_SECRET=change-me-to-a-long-random-secret
+JWT_EXPIRES_IN=1d
+
+# Cloudinary (file uploads)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# RAG / chatbot culturel
+OPENAI_API_KEY=your-openai-api-key
+```
+
+### Data model
+
+- **City** (ville): `name`, `description`, optional `history` (free text), `location`
+  (address + lat/lng), plus a virtual `media` list.
+- **TouristSite** (lieu touristique): same fields (incl. optional `history`) + a `city`
+  reference, plus a virtual `media` list.
+- **Media**: `name`, `description`, `type` (`image` \| `video` \| `audio`), `url`, an optional
+  `publicId` (set when the file was uploaded to Cloudinary), and a polymorphic owner
+  (`ownerType` = `City` \| `TouristSite`, `owner` = its id). A media belongs to exactly one
+  city or tourist site. `GET /cities/:id` and `GET /tourist-sites/:id` return their media
+  inline (populated).
+
+### Roles & permissions (CASL)
+
+| Role     | Cities / Sites / Media                          | Users            |
+| -------- | ----------------------------------------------- | ---------------- |
+| `user`   | read only                                       | read/update self |
+| `editor` | read all, create, update/delete **their own**   | read/update self |
+| `admin`  | full access to everything                       | manage all users |
+
+Authorization is enforced in two layers: the `PoliciesGuard` gates each route by
+role (subject-level), and the services enforce record-level ownership so an editor
+can only modify content they created.
+
+### Auth endpoints
+
+- `POST /auth/register` — self sign-up (always creates a `user`; the `role` field is ignored).
+- `POST /auth/login` — returns `{ accessToken, user }`. Send the token as `Authorization: Bearer <token>`.
+- `GET /auth/profile` — current token payload.
+
+### Bootstrapping the first admin
+
+Self-registration only creates `user` accounts. Promote an existing account to
+`editor`/`admin` directly in MongoDB:
+
+```js
+db.users.updateOne({ email: 'you@example.com' }, { $set: { role: 'admin' } });
+```
+
+### Main resources
+
+- `cities` — `GET` (public), `POST` / `PATCH` / `DELETE` (editor/admin).
+- `tourist-sites` — `GET` (public, filter with `?city=<id>`), `POST` / `PATCH` / `DELETE` (editor/admin).
+- `media` — `GET` (public, filter with `?ownerType=City|TouristSite&owner=<id>&type=image|video|audio`),
+  `POST` / `PATCH` / `DELETE` (editor/admin). Create with `{ name, description, type, url, ownerType, owner }`
+  (optionally `publicId`). `DELETE` also removes the Cloudinary asset when the media has a `publicId`.
+- `users` — admin only (except `GET /users/me`).
+
+### File uploads (Cloudinary)
+
+- `POST /media/upload` — `multipart/form-data` with a single `file` field (editor/admin).
+  Uploads the file to Cloudinary and returns `{ url, publicId, type }`. Use the returned
+  `url` (and `publicId`) in a `POST /media` call to attach it to a city or tourist site.
+  Images, videos and audio are auto-detected.
+
+---
+
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 ## Project setup
