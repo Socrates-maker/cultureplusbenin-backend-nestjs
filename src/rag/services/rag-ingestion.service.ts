@@ -2,8 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { OnEvent } from '@nestjs/event-emitter';
-import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { createRagEmbeddings, type RagEmbeddings } from './rag-embeddings.factory';
 import * as crypto from 'crypto';
 import { RagChunk, RagChunkDocument } from '../schemas/rag-chunk.schema';
 import { RagSourceAdapter, RagIngestableDocument } from '../interfaces/rag-source-adapter.interface';
@@ -21,7 +21,9 @@ interface ContentDeletedPayload {
 @Injectable()
 export class RagIngestionService {
   private readonly logger = new Logger(RagIngestionService.name);
-  private readonly embeddings: OpenAIEmbeddings;
+  // Provider global d'embeddings (RAG_EMBEDDINGS_PROVIDER) — après un
+  // changement, réindexer toutes les sources (voir rag-embeddings.factory.ts).
+  private readonly ragEmbeddings?: RagEmbeddings;
   private readonly splitter: RecursiveCharacterTextSplitter;
   private readonly adapters: Map<RagSourceType, RagSourceAdapter>;
 
@@ -30,7 +32,7 @@ export class RagIngestionService {
     // Liste injectée via le provider factory 'RAG_SOURCE_ADAPTERS' (voir rag.module.ts)
     @Inject('RAG_SOURCE_ADAPTERS') adaptersList: RagSourceAdapter[],
   ) {
-    this.embeddings = new OpenAIEmbeddings({ model: 'text-embedding-3-small' });
+    this.ragEmbeddings = createRagEmbeddings('document');
     this.splitter = new RecursiveCharacterTextSplitter({
       chunkSize: DEFAULT_CHUNK_SIZE,
       chunkOverlap: DEFAULT_CHUNK_OVERLAP,
@@ -80,13 +82,16 @@ export class RagIngestionService {
     }
 
     const contentHash = this.hashText(doc.fullText);
-    const existingHash = await this.ragChunkModel
+    const existing = await this.ragChunkModel
       .findOne({ sourceId: new Types.ObjectId(sourceId), sourceType })
-      .select('contentHash')
+      .select('contentHash embeddingProvider')
       .lean();
 
-    if (existingHash?.contentHash === contentHash) {
-      return; // rien n'a changé, on évite un ré-embedding coûteux et inutile
+    if (
+      existing?.contentHash === contentHash &&
+      existing?.embeddingProvider === this.ragEmbeddings?.provider
+    ) {
+      return; // rien n'a changé (contenu ET provider), on évite un ré-embedding inutile
     }
 
     await this.embedAndUpsert(doc, contentHash);
@@ -126,12 +131,13 @@ export class RagIngestionService {
   }
 
   private async embedAndUpsert(doc: RagIngestableDocument, contentHash: string): Promise<void> {
-    if (!this.embeddings) {
+    const ragEmbeddings = this.ragEmbeddings;
+    if (!ragEmbeddings) {
       return;
     }
 
     const chunks = await this.splitter.splitText(doc.fullText);
-    const vectors = await this.embeddings.embedDocuments(chunks);
+    const vectors = await ragEmbeddings.embeddings.embedDocuments(chunks);
 
     const sourceObjectId = new Types.ObjectId(doc.sourceId);
 
@@ -148,6 +154,7 @@ export class RagIngestionService {
       contentHash,
       embedding: vectors[idx],
       embeddingVersion: 1,
+      embeddingProvider: ragEmbeddings.provider,
       metadata: doc.metadata,
       mediaUrls: doc.mediaUrls ?? [],
     }));
