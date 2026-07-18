@@ -128,16 +128,20 @@ export class SearchService {
    * Fallback when `$text` finds nothing (e.g. partial words like "ouid" while
    * typing): one case-insensitive substring `$unionWith` aggregation.
    */
-  async search(q: string, limit = 20) {
+  async search(q: string, limit = 20, types?: SearchResultItem['type'][]) {
+    const branches = types?.length
+      ? BRANCHES.filter((branch) => types.includes(branch.type))
+      : BRANCHES;
+
     let rows: SearchRow[];
     try {
-      rows = await this.textSearch(q, limit);
+      rows = await this.textSearch(q, limit, branches);
     } catch {
       // Text indexes may not be built yet (fresh database): degrade to regex.
       rows = [];
     }
     if (rows.length === 0) {
-      rows = await this.regexSearch(q, limit);
+      rows = await this.regexSearch(q, limit, branches);
     }
 
     const thumbnails = await this.thumbnailsFor(rows);
@@ -160,9 +164,13 @@ export class SearchService {
   }
 
   /** Index-backed search: one `$text` query per collection, merged by score. */
-  private async textSearch(q: string, limit: number): Promise<SearchRow[]> {
+  private async textSearch(
+    q: string,
+    limit: number,
+    branches: SearchBranch[],
+  ): Promise<SearchRow[]> {
     const perBranch = await Promise.all(
-      BRANCHES.map(async (branch) => {
+      branches.map(async (branch) => {
         const docs = await this.model(branch.model)
           .find(
             { ...branch.visibility, $text: { $search: q } },
@@ -186,7 +194,11 @@ export class SearchService {
    * with a case- and accent-insensitive literal regex, title matches ranked
    * first.
    */
-  private async regexSearch(q: string, limit: number): Promise<SearchRow[]> {
+  private async regexSearch(
+    q: string,
+    limit: number,
+    branches: SearchBranch[],
+  ): Promise<SearchRow[]> {
     const pattern = accentInsensitivePattern(q);
     const regex = new RegExp(pattern, 'i');
 
@@ -226,7 +238,7 @@ export class SearchService {
       },
     ];
 
-    const [first, ...rest] = BRANCHES;
+    const [first, ...rest] = branches;
     const pipeline: PipelineStage[] = [
       ...(branchPipeline(first) as PipelineStage[]),
       ...rest.map(
@@ -241,7 +253,9 @@ export class SearchService {
       { $limit: limit },
     ];
 
-    return this.cityModel.aggregate<SearchRow>(pipeline).exec();
+    // L'agrégation doit démarrer sur la collection de la PREMIÈRE branche :
+    // avec un filtre `types`, ce n'est pas forcément celle des villes.
+    return this.model(first.model).aggregate<SearchRow>(pipeline).exec();
   }
 
   private toRow(branch: SearchBranch, doc: Record<string, unknown>): SearchRow {
