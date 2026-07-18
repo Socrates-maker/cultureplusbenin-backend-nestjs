@@ -14,6 +14,6 @@ export class SearchController {
       'Global search across communes, tourist sites, historical figures, stories, traditions and events (public content only), ranked by relevance',
   })
   search(@Query() query: SearchQueryDto) {
-    return this.searchService.search(query.q, query.limit);
+    return this.searchService.search(query.q, query.limit, query.types);
   }
 }

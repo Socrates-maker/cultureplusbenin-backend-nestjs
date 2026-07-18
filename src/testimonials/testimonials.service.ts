@@ -93,7 +93,16 @@ export class TestimonialsService {
       this.testimonialModel,
       query,
       pagination,
-      { populate: ['coverMedia', 'media'] },
+      {
+        // Peuple le nom du sujet (ville/site/personnalité = `name`,
+        // récit/tradition/événement = `title`) pour que la liste porte son
+        // contexte sans un aller-retour par témoignage côté client.
+        populate: [
+          'coverMedia',
+          'media',
+          { path: 'subject', select: 'name title' },
+        ],
+      },
     );
   }
 
