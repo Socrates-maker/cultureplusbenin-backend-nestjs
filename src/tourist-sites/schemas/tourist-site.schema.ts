@@ -57,11 +57,25 @@ export class TouristSite {
   @Prop()
   rejectionReason?: string;
 
+  // Free-form filtering tags, stored normalized (trimmed lowercase, deduped).
+  @Prop({ type: [String], index: true, default: undefined })
+  tags?: string[];
+
   @Prop({ default: false })
   deleted: boolean;
 }
 
 export const TouristSiteSchema = SchemaFactory.createForClass(TouristSite);
+
+// Weighted French text index backing GET /search (see SearchService).
+TouristSiteSchema.index(
+  { name: 'text', tags: 'text', description: 'text', history: 'text' },
+  {
+    name: 'tourist_site_text_search',
+    weights: { name: 10, tags: 5, description: 3, history: 1 },
+    default_language: 'french',
+  },
+);
 
 // Virtual relation to the media (images / videos / audios) of this site.
 TouristSiteSchema.virtual('media', {

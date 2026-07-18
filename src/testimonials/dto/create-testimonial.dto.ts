@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+import { TagsField } from '../../common/decorators/tags-field.decorator';
 import { TestimonialSubjectType } from '../../common/enums/testimonial.enum';
 
 export class CreateTestimonialDto {
@@ -30,4 +31,7 @@ export class CreateTestimonialDto {
   })
   @IsMongoId()
   subject: string;
+
+  @TagsField()
+  tags?: string[];
 }

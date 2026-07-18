@@ -123,7 +123,9 @@ describe('Galleries on tourist sites (e2e)', () => {
     const res = await request(server())
       .get(`/galleries?ownerType=TouristSite&owner=${siteId}`)
       .expect(200);
-    expect(res.body.map((g: { _id: string }) => g._id)).toContain(galleryId);
+    expect(res.body.data.map((g: { _id: string }) => g._id)).toContain(
+      galleryId,
+    );
   });
 
   it('exposes the galleries on the tourist site detail', async () => {

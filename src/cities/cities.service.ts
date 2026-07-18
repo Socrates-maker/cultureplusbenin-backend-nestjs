@@ -8,6 +8,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
+import { buildTagsFilter } from '../common/utils/tags.util';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+  paginateWithSearch,
+} from '../common/utils/pagination.util';
 import { City, CityDocument } from './schemas/city.schema';
 import { CreateCityDto } from './dto/create-city.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
@@ -24,8 +31,33 @@ export class CitiesService {
     return city.save();
   }
 
-  findAll(): Promise<CityDocument[]> {
-    return this.cityModel.find({ deleted: false }).populate('media').exec();
+  /** Public listing, optionally filtered by a free text search and tags. */
+  findAll(
+    search?: string,
+    tags?: string,
+    pagination: PageOptions = {},
+  ): Promise<Paginated<CityDocument>> {
+    const filter: Record<string, unknown> = { deleted: false };
+    const tagsFilter = buildTagsFilter(tags);
+    if (tagsFilter) {
+      Object.assign(filter, tagsFilter);
+    }
+    return paginateWithSearch<CityDocument>(
+      this.cityModel,
+      filter,
+      search,
+      ['name', 'description', 'history', 'tags'],
+      pagination,
+      { populate: ['media'] },
+    );
+  }
+
+  /** Distinct tags across visible cities (filter UIs / autocomplete). */
+  async listTags(): Promise<string[]> {
+    const tags = await this.cityModel
+      .distinct('tags', { deleted: false })
+      .exec();
+    return (tags as string[]).sort();
   }
 
   async findById(id: string): Promise<CityDocument> {

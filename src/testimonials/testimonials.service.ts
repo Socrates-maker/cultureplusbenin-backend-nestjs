@@ -10,11 +10,20 @@ import { Model, Types } from 'mongoose';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { CitiesService } from '../cities/cities.service';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+} from '../common/utils/pagination.util';
+import { buildTagsFilter } from '../common/utils/tags.util';
 import { MediaType } from '../common/enums/media.enum';
 import { ModerationStatus } from '../common/enums/moderation-status.enum';
 import { Role } from '../common/enums/role.enum';
 import { TestimonialSubjectType } from '../common/enums/testimonial.enum';
+import { EventsService } from '../events/events.service';
 import { HistoricalFiguresService } from '../historical-figures/historical-figures.service';
+import { StoriesService } from '../stories/stories.service';
+import { TraditionsService } from '../traditions/traditions.service';
 import { Media, MediaDocument } from '../media/schemas/media.schema';
 import { TouristSitesService } from '../tourist-sites/tourist-sites.service';
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
@@ -34,6 +43,9 @@ export class TestimonialsService {
     private readonly citiesService: CitiesService,
     private readonly touristSitesService: TouristSitesService,
     private readonly historicalFiguresService: HistoricalFiguresService,
+    private readonly storiesService: StoriesService,
+    private readonly traditionsService: TraditionsService,
+    private readonly eventsService: EventsService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
   ) {}
 
@@ -61,37 +73,74 @@ export class TestimonialsService {
    * validation or rejected. `$nin` also matches legacy documents that predate
    * the `status` field, so no data migration is required.
    */
-  findAll(filter: {
-    subjectType?: TestimonialSubjectType;
-    subject?: string;
-  } = {}): Promise<TestimonialDocument[]> {
+  findAll(
+    filter: {
+      subjectType?: TestimonialSubjectType;
+      subject?: string;
+      tags?: string;
+    } = {},
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TestimonialDocument>> {
     const query: Record<string, unknown> = {
       deleted: false,
       status: { $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED] },
     };
     if (filter.subjectType) query.subjectType = filter.subjectType;
     if (filter.subject) query.subject = filter.subject;
-    return this.testimonialModel
-      .find(query)
-      .populate('coverMedia')
-      .populate('media')
+    const tagsFilter = buildTagsFilter(filter.tags);
+    if (tagsFilter) Object.assign(query, tagsFilter);
+    return paginate<TestimonialDocument>(
+      this.testimonialModel,
+      query,
+      pagination,
+      {
+        // Peuple le nom du sujet (ville/site/personnalité = `name`,
+        // récit/tradition/événement = `title`) pour que la liste porte son
+        // contexte sans un aller-retour par témoignage côté client.
+        populate: [
+          'coverMedia',
+          'media',
+          { path: 'subject', select: 'name title' },
+        ],
+      },
+    );
+  }
+
+  /** Distinct tags across visible testimonials (filter UIs / autocomplete). */
+  async listTags(): Promise<string[]> {
+    const tags = await this.testimonialModel
+      .distinct('tags', {
+        deleted: false,
+        status: {
+          $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED],
+        },
+      })
       .exec();
+    return (tags as string[]).sort();
   }
 
   /** Moderation queue: testimonials awaiting admin validation (admin only). */
-  findPending(): Promise<TestimonialDocument[]> {
-    return this.testimonialModel
-      .find({ deleted: false, status: ModerationStatus.PENDING })
-      .exec();
+  findPending(
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TestimonialDocument>> {
+    return paginate<TestimonialDocument>(
+      this.testimonialModel,
+      { deleted: false, status: ModerationStatus.PENDING },
+      pagination,
+    );
   }
 
   /** The caller's own submissions, whatever their moderation status. */
-  findMine(user: RequestUser): Promise<TestimonialDocument[]> {
-    return this.testimonialModel
-      .find({ deleted: false, createdBy: user.userId })
-      .populate('coverMedia')
-      .populate('media')
-      .exec();
+  findMine(
+    user: RequestUser,
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TestimonialDocument>> {
+    return paginate<TestimonialDocument>(
+      this.testimonialModel,
+      { deleted: false, createdBy: user.userId },
+      pagination,
+      { populate: ['coverMedia', 'media'] },
+    );
   }
 
   /**
@@ -215,6 +264,15 @@ export class TestimonialsService {
         break;
       case TestimonialSubjectType.HISTORICAL_FIGURE:
         await this.historicalFiguresService.findById(subjectId);
+        break;
+      case TestimonialSubjectType.STORY:
+        await this.storiesService.findById(subjectId);
+        break;
+      case TestimonialSubjectType.TRADITION:
+        await this.traditionsService.findById(subjectId);
+        break;
+      case TestimonialSubjectType.EVENT:
+        await this.eventsService.findById(subjectId);
         break;
     }
   }

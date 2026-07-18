@@ -22,6 +22,7 @@ import { Action } from '../casl/action.enum';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CreateHistoricalFigureDto } from './dto/create-historical-figure.dto';
 import { UpdateHistoricalFigureDto } from './dto/update-historical-figure.dto';
 import { HistoricalFiguresService } from './historical-figures.service';
@@ -35,11 +36,39 @@ export class HistoricalFiguresController {
 
   @Get()
   @ApiOperation({
-    summary: 'List historical figures, optionally filtered by city',
+    summary:
+      'List historical figures, optionally filtered by city and searched',
   })
   @ApiQuery({ name: 'city', required: false, description: 'Filter by city id' })
-  findAll(@Query('city') city?: string) {
-    return this.historicalFiguresService.findAll(city);
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Free text search on name, description, biography and tags',
+  })
+  @ApiQuery({
+    name: 'tags',
+    required: false,
+    description:
+      'Comma-separated tags; matches figures carrying at least one of them',
+  })
+  findAll(
+    @Query() pagination: PaginationQueryDto,
+    @Query('city') city?: string,
+    @Query('search') search?: string,
+    @Query('tags') tags?: string,
+  ) {
+    return this.historicalFiguresService.findAll(
+      city,
+      search,
+      tags,
+      pagination,
+    );
+  }
+
+  @Get('tags')
+  @ApiOperation({ summary: 'List all tags used by historical figures' })
+  listTags() {
+    return this.historicalFiguresService.listTags();
   }
 
   @Get(':id')

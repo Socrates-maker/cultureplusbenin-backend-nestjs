@@ -6,6 +6,18 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Allow the admin/editor dashboard (Vite dev server) to call the API.
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN?.split(',') ?? [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:4173',
+      'https://cultureplusbenin-dashboard.vercel.app',
+      'https://culture-benin-dun.vercel.app'
+    ],
+    credentials: true,
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

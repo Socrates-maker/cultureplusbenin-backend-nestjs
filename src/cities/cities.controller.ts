@@ -7,15 +7,22 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CitiesService } from './cities.service';
 import { CreateCityDto } from './dto/create-city.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
@@ -26,9 +33,30 @@ export class CitiesController {
   constructor(private readonly citiesService: CitiesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all cities (public)' })
-  findAll() {
-    return this.citiesService.findAll();
+  @ApiOperation({ summary: 'List all cities (public), optionally searched' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Free text search on name, description, history and tags',
+  })
+  @ApiQuery({
+    name: 'tags',
+    required: false,
+    description:
+      'Comma-separated tags; matches cities carrying at least one of them',
+  })
+  findAll(
+    @Query() pagination: PaginationQueryDto,
+    @Query('search') search?: string,
+    @Query('tags') tags?: string,
+  ) {
+    return this.citiesService.findAll(search, tags, pagination);
+  }
+
+  @Get('tags')
+  @ApiOperation({ summary: 'List all tags used by cities' })
+  listTags() {
+    return this.citiesService.listTags();
   }
 
   @Get(':id')

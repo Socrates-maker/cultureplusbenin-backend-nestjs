@@ -4,4 +4,7 @@ export enum TestimonialSubjectType {
   CITY = 'City',
   TOURIST_SITE = 'TouristSite',
   HISTORICAL_FIGURE = 'HistoricalFigure',
+  STORY = 'Story',
+  TRADITION = 'Tradition',
+  EVENT = 'Event',
 }

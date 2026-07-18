@@ -9,6 +9,13 @@ import { Model } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
+import { buildTagsFilter } from '../common/utils/tags.util';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+  paginateWithSearch,
+} from '../common/utils/pagination.util';
 import { CreateHistoricalFigureDto } from './dto/create-historical-figure.dto';
 import { UpdateHistoricalFigureDto } from './dto/update-historical-figure.dto';
 import {
@@ -38,12 +45,36 @@ export class HistoricalFiguresService {
     return figure.save();
   }
 
-  findAll(cityId?: string): Promise<HistoricalFigureDocument[]> {
+  findAll(
+    cityId?: string,
+    search?: string,
+    tags?: string,
+    pagination: PageOptions = {},
+  ): Promise<Paginated<HistoricalFigureDocument>> {
     const filter: Record<string, unknown> = { deleted: false };
     if (cityId) {
       filter.city = cityId;
     }
-    return this.historicalFigureModel.find(filter).populate('media').exec();
+    const tagsFilter = buildTagsFilter(tags);
+    if (tagsFilter) {
+      Object.assign(filter, tagsFilter);
+    }
+    return paginateWithSearch<HistoricalFigureDocument>(
+      this.historicalFigureModel,
+      filter,
+      search,
+      ['name', 'description', 'biography', 'tags'],
+      pagination,
+      { populate: ['media'] },
+    );
+  }
+
+  /** Distinct tags across visible figures (filter UIs / autocomplete). */
+  async listTags(): Promise<string[]> {
+    const tags = await this.historicalFigureModel
+      .distinct('tags', { deleted: false })
+      .exec();
+    return (tags as string[]).sort();
   }
 
   async findById(id: string): Promise<HistoricalFigureDocument> {

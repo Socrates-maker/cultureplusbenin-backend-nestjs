@@ -5,7 +5,8 @@ import { Model } from 'mongoose';
 import { RagChatService } from './services/rag-chat.service';
 import { RagIngestionService } from './services/rag-ingestion.service';
 import { RagChunk, RagChunkDocument } from './schemas/rag-chunk.schema';
-import { ChatRequestDto, ChatResponseDto } from './dto/chat.dto';
+import { ChatRequestDto, ChatResponseDto, LlmProvidersDto } from './dto/chat.dto';
+import { availableRagProviders, resolveRagProvider } from './services/rag-llm.factory';
 import { ReindexParamsDto, ReindexResultDto, IndexStatusDto } from './dto/reindex.dto';
 // TODO: adapter ces imports à vos guards/décorateurs existants (AuthModule/CaslModule)
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -24,7 +25,24 @@ export class RagController {
   @ApiOperation({ summary: 'Envoyer un message au chatbot culturel' })
   @ApiResponse({ status: 200, type: ChatResponseDto })
   async chat(@Body() dto: ChatRequestDto): Promise<ChatResponseDto> {
-    return this.chatService.chat(dto.message, dto.conversationId, dto.filters);
+    return this.chatService.chat(
+      dto.message,
+      dto.conversationId,
+      dto.filters,
+      dto.llmProvider,
+    );
+  }
+
+  @Get('providers')
+  @ApiOperation({
+    summary: 'Providers LLM utilisables pour le chat (pour un sélecteur côté front)',
+  })
+  @ApiResponse({ status: 200, type: LlmProvidersDto })
+  providers(): LlmProvidersDto {
+    return {
+      available: availableRagProviders(),
+      default: resolveRagProvider() ?? null,
+    };
   }
 
   // --- Endpoints admin ---

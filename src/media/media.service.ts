@@ -12,8 +12,17 @@ import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { MediaOwnerType, MediaType } from '../common/enums/media.enum';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+} from '../common/utils/pagination.util';
+import { buildTagsFilter } from '../common/utils/tags.util';
 import { Role } from '../common/enums/role.enum';
+import { EventsService } from '../events/events.service';
 import { GalleriesService } from '../galleries/galleries.service';
+import { StoriesService } from '../stories/stories.service';
+import { TraditionsService } from '../traditions/traditions.service';
 import { HistoricalFiguresService } from '../historical-figures/historical-figures.service';
 import { TestimonialsService } from '../testimonials/testimonials.service';
 import { TouristSitesService } from '../tourist-sites/tourist-sites.service';
@@ -25,6 +34,7 @@ export interface MediaFilter {
   ownerType?: MediaOwnerType;
   owner?: string;
   type?: MediaType;
+  tags?: string;
 }
 
 @Injectable()
@@ -36,6 +46,9 @@ export class MediaService {
     private readonly galleriesService: GalleriesService,
     private readonly historicalFiguresService: HistoricalFiguresService,
     private readonly testimonialsService: TestimonialsService,
+    private readonly storiesService: StoriesService,
+    private readonly traditionsService: TraditionsService,
+    private readonly eventsService: EventsService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -102,12 +115,25 @@ export class MediaService {
     throw new BadRequestException(`Unsupported file type: ${mimetype}`);
   }
 
-  findAll(filter: MediaFilter = {}): Promise<MediaDocument[]> {
+  findAll(
+    filter: MediaFilter = {},
+    pagination: PageOptions = {},
+  ): Promise<Paginated<MediaDocument>> {
     const query: Record<string, unknown> = { deleted: false };
     if (filter.ownerType) query.ownerType = filter.ownerType;
     if (filter.owner) query.owner = filter.owner;
     if (filter.type) query.type = filter.type;
-    return this.mediaModel.find(query).exec();
+    const tagsFilter = buildTagsFilter(filter.tags);
+    if (tagsFilter) Object.assign(query, tagsFilter);
+    return paginate<MediaDocument>(this.mediaModel, query, pagination);
+  }
+
+  /** Distinct tags across visible media (filter UIs / autocomplete). */
+  async listTags(): Promise<string[]> {
+    const tags = await this.mediaModel
+      .distinct('tags', { deleted: false })
+      .exec();
+    return (tags as string[]).sort();
   }
 
   async findById(id: string): Promise<MediaDocument> {
@@ -171,6 +197,15 @@ export class MediaService {
         break;
       case MediaOwnerType.TESTIMONIAL:
         await this.testimonialsService.findById(owner);
+        break;
+      case MediaOwnerType.STORY:
+        await this.storiesService.findById(owner);
+        break;
+      case MediaOwnerType.TRADITION:
+        await this.traditionsService.findById(owner);
+        break;
+      case MediaOwnerType.EVENT:
+        await this.eventsService.findById(owner);
         break;
     }
   }

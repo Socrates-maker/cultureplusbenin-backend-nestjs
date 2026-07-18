@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -12,6 +13,7 @@ import { Action } from '../casl/action.enum';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
@@ -32,8 +34,8 @@ export class UsersController {
   @Get()
   @ApiOperation({ summary: 'List all users (admin only)' })
   @CheckPolicies((ability) => ability.can(Action.Manage, 'User'))
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query() pagination: PaginationQueryDto) {
+    return this.usersService.findAll(pagination);
   }
 
   @Get(':id')

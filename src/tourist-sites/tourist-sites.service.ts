@@ -9,6 +9,13 @@ import { Model, Types } from 'mongoose';
 import { CitiesService } from '../cities/cities.service';
 import { CaslAbilityFactory, RequestUser } from '../casl/casl-ability.factory';
 import { Action } from '../casl/action.enum';
+import { buildTagsFilter } from '../common/utils/tags.util';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+  paginateWithSearch,
+} from '../common/utils/pagination.util';
 import { ModerationStatus } from '../common/enums/moderation-status.enum';
 import { Role } from '../common/enums/role.enum';
 import { CreateTouristSiteDto } from './dto/create-tourist-site.dto';
@@ -52,7 +59,12 @@ export class TouristSitesService {
    * the `status` field (missing status counts as visible), so no data
    * migration is required.
    */
-  findAll(cityId?: string): Promise<TouristSiteDocument[]> {
+  findAll(
+    cityId?: string,
+    search?: string,
+    tags?: string,
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TouristSiteDocument>> {
     const filter: Record<string, unknown> = {
       deleted: false,
       status: { $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED] },
@@ -60,7 +72,31 @@ export class TouristSitesService {
     if (cityId) {
       filter.city = cityId;
     }
-    return this.touristSiteModel.find(filter).populate('media').exec();
+    const tagsFilter = buildTagsFilter(tags);
+    if (tagsFilter) {
+      Object.assign(filter, tagsFilter);
+    }
+    return paginateWithSearch<TouristSiteDocument>(
+      this.touristSiteModel,
+      filter,
+      search,
+      ['name', 'description', 'history', 'tags'],
+      pagination,
+      { populate: ['media'] },
+    );
+  }
+
+  /** Distinct tags across publicly visible sites (filter UIs / autocomplete). */
+  async listTags(): Promise<string[]> {
+    const tags = await this.touristSiteModel
+      .distinct('tags', {
+        deleted: false,
+        status: {
+          $nin: [ModerationStatus.PENDING, ModerationStatus.REJECTED],
+        },
+      })
+      .exec();
+    return (tags as string[]).sort();
   }
 
   /** True when a site must be hidden from the public (awaiting / denied). */
@@ -72,18 +108,27 @@ export class TouristSitesService {
   }
 
   /** Moderation queue: sites awaiting admin validation (admin only). */
-  findPending(): Promise<TouristSiteDocument[]> {
-    return this.touristSiteModel
-      .find({ deleted: false, status: ModerationStatus.PENDING })
-      .exec();
+  findPending(
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TouristSiteDocument>> {
+    return paginate<TouristSiteDocument>(
+      this.touristSiteModel,
+      { deleted: false, status: ModerationStatus.PENDING },
+      pagination,
+    );
   }
 
   /** The caller's own submissions, whatever their moderation status. */
-  findMine(user: RequestUser): Promise<TouristSiteDocument[]> {
-    return this.touristSiteModel
-      .find({ deleted: false, createdBy: user.userId })
-      .populate('media')
-      .exec();
+  findMine(
+    user: RequestUser,
+    pagination: PageOptions = {},
+  ): Promise<Paginated<TouristSiteDocument>> {
+    return paginate<TouristSiteDocument>(
+      this.touristSiteModel,
+      { deleted: false, createdBy: user.userId },
+      pagination,
+      { populate: ['media'] },
+    );
   }
 
   /**

@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ChatOpenAI } from '@langchain/openai';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  createRagLlm,
+  resolveRagProvider,
+  type RagLlmProvider,
+} from './rag-llm.factory';
 import { RagRetrievalService, RetrievedChunk } from './rag-retrieval.service';
 import { ChatSession, ChatSessionDocument } from '../schemas/chat-session.schema';
 
@@ -11,6 +16,8 @@ export interface ChatResult {
   answer: string;
   sources: { sourceId: string; sourceType: string; sourceTitle: string; mediaUrls: string[] }[];
   conversationId: string;
+  // Provider LLM ayant généré la réponse ; absent en mode dégradé (aucune clé).
+  llmProvider?: RagLlmProvider;
 }
 
 const SYSTEM_PROMPT = `Tu es l'assistant culturel de la plateforme CulturePlus Bénin.
@@ -29,26 +36,32 @@ RÈGLES STRICTES :
 
 @Injectable()
 export class RagChatService {
-  private readonly llm: ChatOpenAI;
-  private readonly hasOpenAiKey = Boolean(process.env.OPENAI_API_KEY?.trim());
+  // Un modèle par provider, instancié à la première utilisation. Le provider
+  // est choisi par requête (dto.llmProvider), avec RAG_LLM_PROVIDER en défaut.
+  private readonly llmCache = new Map<RagLlmProvider, BaseChatModel>();
 
   constructor(
     private readonly retrievalService: RagRetrievalService,
     @InjectModel(ChatSession.name) private readonly chatSessionModel: Model<ChatSessionDocument>,
-  ) {
-    this.llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0.3 });
-  }
+  ) {}
 
   async chat(
     message: string,
     conversationId?: string,
     filters?: { region?: string; category?: string },
+    llmProvider?: RagLlmProvider,
   ): Promise<ChatResult> {
     const convoId = conversationId ?? uuidv4();
     const session = await this.getOrCreateSession(convoId);
 
+    const resolved = this.getLlm(llmProvider);
     const retrievedChunks = await this.retrieveRelevantChunks(message, filters);
-    const answer = await this.generateAnswer(message, session.messages.slice(-10), retrievedChunks);
+    const answer = await this.generateAnswer(
+      message,
+      session.messages.slice(-10),
+      retrievedChunks,
+      resolved?.llm,
+    );
 
     // Dédoublonnage des sources par sourceId
     const uniqueSources = Array.from(new Map(retrievedChunks.map((c) => [c.sourceId, c])).values()).map((c) => ({
@@ -60,7 +73,26 @@ export class RagChatService {
 
     await this.persistExchange(session, message, answer, uniqueSources);
 
-    return { answer, sources: uniqueSources, conversationId: convoId };
+    return {
+      answer,
+      sources: uniqueSources,
+      conversationId: convoId,
+      llmProvider: resolved?.provider,
+    };
+  }
+
+  private getLlm(
+    requested?: RagLlmProvider,
+  ): { provider: RagLlmProvider; llm: BaseChatModel } | undefined {
+    const provider = resolveRagProvider(requested);
+    if (!provider) return undefined;
+
+    let llm = this.llmCache.get(provider);
+    if (!llm) {
+      llm = createRagLlm(provider);
+      this.llmCache.set(provider, llm);
+    }
+    return { provider, llm };
   }
 
   private shouldBrowseContent(message: string, filters?: { region?: string; category?: string }) {
@@ -94,8 +126,9 @@ export class RagChatService {
     message: string,
     history: ChatSessionDocument['messages'],
     retrievedChunks: RetrievedChunk[],
+    llm?: BaseChatModel,
   ): Promise<string> {
-    if (!this.hasOpenAiKey) {
+    if (!llm) {
       if (!retrievedChunks.length) {
         return "Je ne dispose pas d'assez d'informations indexées pour répondre à cette question pour le moment.";
       }
@@ -106,7 +139,7 @@ export class RagChatService {
         .join('\n');
 
       return [
-        "Je n'ai pas encore la configuration OpenAI requise pour générer une réponse enrichie.",
+        "Je n'ai pas encore de modèle de langage configuré (clé OpenAI ou Gemini) pour générer une réponse enrichie.",
         'Voici les contenus indexés les plus proches de votre demande :',
         summary,
       ].join('\n');
@@ -122,7 +155,7 @@ export class RagChatService {
           .join('\n---\n')
       : "Aucun contexte pertinent n'a été trouvé dans la base de connaissances.";
 
-    const response = await this.llm.invoke([
+    const response = await llm.invoke([
       new SystemMessage(
         `${SYSTEM_PROMPT}\n\nCONTEXTE DISPONIBLE:\n${context}\n\nConsigne finale: réponds uniquement à partir du contexte ci-dessus. Si le contexte ne suffit pas, dis clairement que tu ne disposes pas de l'information sur la plateforme.`,
       ),

@@ -1,6 +1,13 @@
-import { IsEnum, IsMongoId, IsOptional, IsString, IsUrl } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 import { MemoryDifficulty } from '../schemas/memory-item.schema';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateMemoryItemDto {
   @IsString()
@@ -20,4 +27,12 @@ export class CreateMemoryItemDto {
   @IsEnum(MemoryDifficulty)
   @ApiProperty({ description: 'The difficulty level of the memory item', example: 'facile' })
   difficulty?: MemoryDifficulty;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({
+    description: 'Whether the item is published (visible in the game). Defaults to true.',
+    example: true,
+  })
+  isPublished?: boolean;
 }

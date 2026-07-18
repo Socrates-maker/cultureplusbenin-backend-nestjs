@@ -7,6 +7,7 @@ import {
   IsString,
   IsUrl,
 } from 'class-validator';
+import { TagsField } from '../../common/decorators/tags-field.decorator';
 import { MediaOwnerType, MediaType } from '../../common/enums/media.enum';
 
 export class CreateMediaDto {
@@ -52,4 +53,7 @@ export class CreateMediaDto {
   })
   @IsMongoId()
   owner: string;
+
+  @TagsField()
+  tags?: string[];
 }

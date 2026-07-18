@@ -23,6 +23,7 @@ import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { GalleryOwnerType } from '../common/enums/gallery.enum';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 import { UpdateGalleryDto } from './dto/update-gallery.dto';
 import { GalleriesService } from './galleries.service';
@@ -41,10 +42,11 @@ export class GalleriesController {
     description: 'Filter by owner id (City or TouristSite)',
   })
   findAll(
+    @Query() pagination: PaginationQueryDto,
     @Query('ownerType') ownerType?: GalleryOwnerType,
     @Query('owner') owner?: string,
   ) {
-    return this.galleriesService.findAll({ ownerType, owner });
+    return this.galleriesService.findAll({ ownerType, owner }, pagination);
   }
 
   @Get(':id')

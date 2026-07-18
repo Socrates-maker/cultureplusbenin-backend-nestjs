@@ -6,6 +6,11 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
+import {
+  PageOptions,
+  Paginated,
+  paginate,
+} from '../common/utils/pagination.util';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
@@ -29,8 +34,12 @@ export class UsersService {
     return user.save();
   }
 
-  findAll(): Promise<UserDocument[]> {
-    return this.userModel.find({ deleted: false }).exec();
+  findAll(pagination: PageOptions = {}): Promise<Paginated<UserDocument>> {
+    return paginate<UserDocument>(
+      this.userModel,
+      { deleted: false },
+      pagination,
+    );
   }
 
   async findById(id: string): Promise<UserDocument> {
